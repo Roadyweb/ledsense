@@ -1,8 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
+
 import RPi.GPIO as GPIO
 import time
+from string import upper
 
 
 
@@ -10,7 +13,36 @@ s2 = 23
 s3 = 24
 signal = 25
 NUM_CYCLES = 100
-WAIT_AFT_SWITCH = 0.1
+WAIT_AFT_SWITCH = 0.3
+
+
+def set(color):
+    color = upper(color)
+    if color == 'R' or color == 'RED':
+        GPIO.output(s2, GPIO.LOW)
+        GPIO.output(s3, GPIO.LOW)
+    elif color == 'G' or color == 'GREEN':
+        GPIO.output(s2, GPIO.HIGH)
+        GPIO.output(s3, GPIO.HIGH)
+    elif color == 'B' or color == 'BLUE':
+        GPIO.output(s2, GPIO.LOW)
+        GPIO.output(s3, GPIO.HIGH)
+    elif color == 'C' or color == 'CLEAR':
+        GPIO.output(s2, GPIO.LOW)
+        GPIO.output(s3, GPIO.HIGH)
+    else:
+        raise TypeError('Use R, G, B or C as parameter')
+    time.sleep(WAIT_AFT_SWITCH)
+
+
+def measure():
+    start = time.time()
+    for _ in range(NUM_CYCLES):
+        GPIO.wait_for_edge(signal, GPIO.FALLING)
+    duration = time.time() - start      # seconds to run for loop
+    color = NUM_CYCLES / duration         # in Hz
+    return color
+
 
 def setup():
     GPIO.setmode(GPIO.BCM)
@@ -21,50 +53,28 @@ def setup():
 
 
 def loop():
-    while(1):
+    while 1:
+        set('RED')
+        red = measure()
 
-        GPIO.output(s2, GPIO.LOW)
-        GPIO.output(s3, GPIO.LOW)
-        time.sleep(WAIT_AFT_SWITCH)
-        start = time.time()
-        for _ in range(NUM_CYCLES):
-            GPIO.wait_for_edge(signal, GPIO.FALLING)
-        duration_red = time.time() - start      # seconds to run for loop
-        red = NUM_CYCLES / duration_red         # in Hz
-        # print("red value - ",red)
+        set('BLUE')
+        blue = measure()
 
-        GPIO.output(s2, GPIO.LOW)
-        GPIO.output(s3, GPIO.HIGH)
-        time.sleep(WAIT_AFT_SWITCH)
-        start = time.time()
-        for _ in range(NUM_CYCLES):
-            GPIO.wait_for_edge(signal, GPIO.FALLING)
-        duration_blue = time.time() - start
-        blue = NUM_CYCLES / duration_blue
-        # print("blue value - ",blue)
+        set('GREEN')
+        green = measure()
 
-        GPIO.output(s2, GPIO.HIGH)
-        GPIO.output(s3, GPIO.HIGH)
-        time.sleep(WAIT_AFT_SWITCH)
-        start = time.time()
-        for _ in range(NUM_CYCLES):
-            GPIO.wait_for_edge(signal, GPIO.FALLING)
-        duration_green = time.time() - start
-        green = NUM_CYCLES / duration_green
-        # print("green value - ",green)
-        # time.sleep(2)
+        set('CLEAR')
+        clear = measure()
 
-        print('R: %5d, G: %5d, B: %5d RD: %5f GD: %5f BD: %5f' %
-              (red, green, blue,
-               duration_red, duration_green, duration_blue))
+        print('R: %5d, G: %5d, B: %5d C: %5d' %
+              (red, green, blue, clear))
 
 
 def endprogram():
     GPIO.cleanup()
 
 
-if __name__ == '__main__':
-
+def main():
     setup()
 
     try:
@@ -72,3 +82,7 @@ if __name__ == '__main__':
 
     except KeyboardInterrupt:
         endprogram()
+
+
+if __name__ == '__main__':
+    main()
