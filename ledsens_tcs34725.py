@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
@@ -25,8 +25,8 @@ tcs = None
 
 COLORS = [
     # Gelbtöne
-    ['RAL 1000 - Grünbeige'    , [3877.0, 3134.0, 2231.0]],
-    ['RAL 1001 - Beige'        , [3854.0, 2844.0, 2110.0]],
+    ['RAL 1000 - Grünbeige'    , [4080.0, 3300.0, 2328.0]],
+    ['RAL 1001 - Beige'        , [4188.0, 3079.0, 2263.0]],
     ['RAL 1002 - Sandgelb'     , [3888.0, 2799.0, 1889.0]],
     ['RAL 1003 - Signalgelb'   , [4812.0, 2828.0, 1466.0]],
     ['RAL 1004 - Goldgelb'     , [4172.0, 2535.0, 1356.0]],
@@ -41,7 +41,21 @@ COLORS = [
     ['RAL 1016 - Schwefelgelb' , [5651.0, 4455.0, 2353.0]],
     ['RAL 1017 - Safrangelb'   , [4890.0, 2856.0, 1728.0]],
     # Blautöne
-    ['RAL 1012', [0,0,0]],
+    ['RAL 5008 - Graublau'     , [1026.0,  914.0,  842.0]],
+    ['RAL 5009 - Azurblau'     , [1116.0, 1216.0, 1280.0]],
+    ['RAL 5010 - Enzianblau'   , [ 973.0, 1073.0, 1316.0]],
+    ['RAL 5011 - Stahlblau'    , [ 887.0,  783.0,  752.0]],
+    ['RAL 5012 - Lichtblau'    , [1476.0, 1990.0, 2394.0]],
+    ['RAL 5013 - Kobaltblau'   , [ 926.0,  839.0,  878.0]],
+    ['RAL 5014 - Taubenblau'   , [1761.0, 1764.0, 1822.0]],
+    ['RAL 5015 - Himmelblau'   , [1249.0, 1745.0, 2243.0]],
+    ['RAL 5017 - Verkehrsblau' , [ 984.0, 1202.0, 1554.0]],
+    ['RAL 5018 - Türkisblau'   , [1451.0, 1959.0, 1856.0]],
+    ['RAL 5019 - Capriblau'    , [1022.0, 1207.0, 1422.0]],
+    ['RAL 5020 - Ozeanblau'    , [ 894.0,  888.0,  873.0]],
+    ['RAL 5021 - Wasserblau'   , [1114.0, 1494.0, 1449.0]],
+    ['RAL 5022 - Nachtblau'    , [ 952.0,  851.0,  912.0]],
+    ['RAL 5023 - Fernblau'     , [1351.0, 1440.0, 1592.0]],
 ]
 
 
@@ -74,10 +88,25 @@ def detect_cube(thres=DET_CUBE_THRESHOLD):
         surrounding light.
     '''
     led_off()
+    time.sleep(0.1)
     while 42:
         r, g, b, c = measure()
         if c < thres:
             return
+
+
+def detect_cube_removal(thres=DET_CUBE_THRESHOLD):
+    ''' Cube is detected by measuring the clear brightness. If the brightness
+        falls below the threshold it is assumed the the cube shields all
+        surrounding light.
+    '''
+    led_off()
+    time.sleep(0.1)
+    while 42:
+        r, g, b, c = measure()
+        if c > thres:
+            return
+
 
 
 def get_rgb_distance(rgb1, rgb2):
@@ -103,7 +132,7 @@ def get_stable_rgb(count=STABLE_RGB_CNT, dist_limit=STABLE_RGB_DIST):
             if act_dist > max_dist:
                 max_dist = act_dist
         if max_dist > dist_limit:
-            print('Max Dist: %d Dist Limit: %d Restarting... ' % (max_dist, dist_limit))
+            # print('Max Dist: %d Dist Limit: %d Restarting... ' % (max_dist, dist_limit))
             continue
         break
     median = list(numpy.median(res, axis=0))
@@ -139,16 +168,16 @@ def setup():
 def loop():
     global tcs
     while 42:
-        print('Waiting for Cube ...')
         detect_cube()
         led_on()
         time.sleep(0.1)
         res = get_stable_rgb()
+        #print(res)
         color = get_color(res)
-        print('%20s - Distance: %5d - Cur. RGB: %s RGB %s' % 
+        print('%-30s - Distance: %5d - Cur. RGB: %-25s RGB %-20s' % 
               (color[0], color[2], str(res), str(color[1])))
-        led_off()
-        time.sleep(1)
+        detect_cube_removal()
+
 
 def endprogram():
     GPIO.cleanup()
