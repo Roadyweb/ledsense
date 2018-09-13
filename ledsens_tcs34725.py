@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
@@ -7,10 +7,11 @@ import RPi.GPIO as GPIO
 import TCS34725
 import numpy
 import pprint
-import pydevd
+import sys
 import time
 
-#pydevd.settrace('192.168.178.80')
+# Uncomment to remote debug
+#import pydevd; pydevd.settrace('192.168.178.80')
 
 
 GPIO_LED=4
@@ -23,11 +24,24 @@ STABLE_RGB_DIST=10
 tcs = None
 
 COLORS = [
-    ['RAL 1005', [3232.0, 2102.0, 1196.0]],
-    ['RAL 1006', (0,0,0)],
-    ['RAL 1007', (0,0,0)],
-    ['RAL 1011', (0,0,0)],
-    ['RAL 1012', (0,0,0)],
+    # Gelbtöne
+    ['RAL 1000 - Grünbeige'    , [3877.0, 3134.0, 2231.0]],
+    ['RAL 1001 - Beige'        , [3854.0, 2844.0, 2110.0]],
+    ['RAL 1002 - Sandgelb'     , [3888.0, 2799.0, 1889.0]],
+    ['RAL 1003 - Signalgelb'   , [4812.0, 2828.0, 1466.0]],
+    ['RAL 1004 - Goldgelb'     , [4172.0, 2535.0, 1356.0]],
+    ['RAL 1005 - Honiggelb'    , [3232.0, 2102.0, 1196.0]],
+    ['RAL 1006 - Maisgelb'     , [4016.0, 2272.0, 1310.0]],
+    ['RAL 1007 - Narzissengelb', [4048.0, 2140.0, 1228.0]],
+    ['RAL 1011 - Braunbeige'   , [2764.0, 1849.0, 1347.0]],
+    ['RAL 1012 - Zitronengelb' , [3851.0, 2708.0, 1530.0]],
+    ['RAL 1013 - Perlweiß'     , [5165.0, 4411.0, 3649.0]],
+    ['RAL 1014 - Elfenbein'    , [4541.0, 3593.0, 2631.0]],
+    ['RAL 1015 - Hellelfenbein', [5117.0, 4189.0, 3297.0]],
+    ['RAL 1016 - Schwefelgelb' , [5651.0, 4455.0, 2353.0]],
+    ['RAL 1017 - Safrangelb'   , [4890.0, 2856.0, 1728.0]],
+    # Blautöne
+    ['RAL 1012', [0,0,0]],
 ]
 
 
@@ -61,7 +75,7 @@ def detect_cube(thres=DET_CUBE_THRESHOLD):
     '''
     led_off()
     while 42:
-        r, g, b, c = measure(True)
+        r, g, b, c = measure()
         if c < thres:
             return
 
@@ -95,6 +109,22 @@ def get_stable_rgb(count=STABLE_RGB_CNT, dist_limit=STABLE_RGB_DIST):
     median = list(numpy.median(res, axis=0))
     return median
 
+def get_color(rgb):
+    ''' Takes an RGB list as argument and matches against COLORS the closest
+        will be uses as match
+    '''
+    min_dist = 999999999
+    match = 0
+    for color in COLORS:
+        color_name = color[0]
+        color_rgb = color[1]
+        dist = get_rgb_distance(rgb, color_rgb)
+        if dist < min_dist:
+            min_dist = dist
+            match = color
+    return match[0], match[1], min_dist
+
+
 
 def setup():
     GPIO.setmode(GPIO.BCM)
@@ -109,12 +139,14 @@ def setup():
 def loop():
     global tcs
     while 42:
+        print('Waiting for Cube ...')
         detect_cube()
-        print('Cube detected')
         led_on()
         time.sleep(0.1)
         res = get_stable_rgb()
-        print(res)
+        color = get_color(res)
+        print('%20s - Distance: %5d - Cur. RGB: %s RGB %s' % 
+              (color[0], color[2], str(res), str(color[1])))
         led_off()
         time.sleep(1)
 
