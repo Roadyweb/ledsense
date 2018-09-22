@@ -5,6 +5,7 @@
 
 Usage:q
   led_sens.py app
+  led_sens.py diff
   led_sens.py meas (on|off)
   led_sens.py detect
   led_sens.py ship new <name>...
@@ -142,12 +143,18 @@ def detect_cube_removal(thres=DET_CUBE_THRESHOLD):
 
 
 def get_rgb_distance(rgb1, rgb2):
-    ''' This function expects to tuples with RGB values and calculates the distance between both
+    ''' This function expects two tuples with RGB values and calculates the distance between both
         vectors.
     '''
     rgb1 = numpy.array(rgb1)
     rgb2 = numpy.array(rgb2)
     return numpy.linalg.norm(rgb1 - rgb2)
+
+
+def get_rgb_length(rgb):
+    ''' This function expects one tuples with RGB values and calculates the length of the vector.
+    '''
+    return numpy.linalg.norm(rgb)
 
 
 def get_stable_rgb(count=STABLE_RGB_CNT, dist_limit=STABLE_RGB_DIST):
@@ -211,6 +218,28 @@ def app():
         detect_cube_removal()
 
 
+def diff():
+    global tcs
+
+    while 42:
+        led_on()
+        time.sleep(0.1)
+        r, g, b, c = measure()
+        # print('R: %5d G: %5d B: %5d C: %5d' % (r, g, b, c))
+        led_off()
+        time.sleep(0.1)
+        r2, g2, b2, c2 = measure()
+        # print('R: %5d G: %5d B: %5d C: %5d' % (r2, g2, b2, c2))
+        rgb = (r, g, b)
+        rgb2 = (r2, g2, b2)
+        rgb_len = get_rgb_length(rgb)
+        rgb2_len = get_rgb_length(rgb2)
+        rgb_diff = get_rgb_distance(rgb, rgb2)
+        clear_diff = abs(c - c2)
+        print('Len %5d %5d %5d Clear: %5d %5d %5d' %
+              (rgb_len, rgb2_len, rgb_diff, c, c2, clear_diff))
+
+
 def meas(led_on):
     global tcs
 
@@ -234,6 +263,8 @@ def main():
     try:
         if args['app'] == True:
             app()
+        elif args['diff'] == True:
+            diff()
         elif args['meas'] == True:
             meas(args['on'])
         else:
