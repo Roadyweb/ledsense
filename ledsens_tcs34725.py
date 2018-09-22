@@ -50,7 +50,7 @@ GPIO_LED = 4
 
 tcs = None
 
-LED_TOGGLE_HOLDOFF = 0.1
+LED_TOGGLE_HOLDOFF = 0.11
 
 
 def measure(debug=False):
@@ -282,7 +282,7 @@ class draw_diagram(object):
 
     def getstr(self):
         pos_raw = 1.0 * self.last_value / self.max
-        pos = int(1.0 * pos_raw * self.width)
+        pos = round(1.0 * pos_raw * self.width)
         # print('%5f %5f %f' % (pos_raw, pos, self.max))
         str = '%s%s' % (pos * ' ', 'O')
         if self.max_updated:
@@ -322,15 +322,14 @@ def meas(conf_led_on, toggle):
 def play():
     global LED_TOGGLE_HOLDOFF
     sleep_duration = LED_TOGGLE_HOLDOFF
-    rep_cnt = 5
-    cycle_cnt = 3
+    rep_cnt = 2
+    cycle_cnt = 25
 
     dd = draw_diagram(40)
 
     while 42:
         sleep_duration = 0.95 * sleep_duration
         LED_TOGGLE_HOLDOFF = sleep_duration
-        print('Setting to %f' % LED_TOGGLE_HOLDOFF)
         start = datetime.datetime.now()
         for i in range(cycle_cnt):
             led_on()
@@ -349,6 +348,8 @@ def play():
         duration = datetime.datetime.now() - start
         duration_ms = int(duration.total_seconds() * 1000)
         meas_cnt = cycle_cnt * 2 * rep_cnt
+        print('**** Summary ****')
+        print('Setting to %f' % LED_TOGGLE_HOLDOFF)
         print('Duration for %d measurements: %5d ms' % (meas_cnt, duration_ms))
         print('Duration per measurements: %5d ms' % (duration_ms / meas_cnt))
         time.sleep(2)
@@ -403,4 +404,12 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    import cProfile
+    import pstats
+
+    cProfile.run('main()', 'restats')
+    p = pstats.Stats('restats')
+    p.sort_stats('cumulative')
+    p.print_stats()
+    #p.strip_dirs().sort_stats(-1).print_stats()
+    #main()
