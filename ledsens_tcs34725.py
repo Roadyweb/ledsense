@@ -278,11 +278,25 @@ def meas(led_on):
         print('R: %5d G: %5d B: %5d C: %5d' % (r, g, b, c))
 
 
-def play():
-    data = DEF_CONFIG
-    
+def config_save_default():
     with open('config_default.yaml', 'w') as outfile:
         yaml.dump(data, outfile, indent=4)
+
+
+def config_load(fname):
+    if fname == None:
+        print('No config file given. Using default')
+        return DEF_CONFIG
+
+    print('Trying to load config file: %s' % fname)
+    with open(fname, 'r') as infile:
+        return yaml.load(infile)
+
+
+def play():
+    data = DEF_CONFIG
+
+
 
 def endprogram():
     GPIO.cleanup()
@@ -291,6 +305,8 @@ def endprogram():
 def main():
     args = docopt(__doc__, version='LED Sensing')
     print(args)
+    config = config_load(args['CONFIG'])
+    pprint.pprint(config)
     setup()
 
     try:
