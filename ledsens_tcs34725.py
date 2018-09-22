@@ -1,6 +1,28 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+"""LED Sensing.
+
+Usage:
+  led_sens.py app
+  led_sens.py ship new <name>...
+  led_sens.py ship new <name>...
+  led_sens.py ship new <name>...
+  led_sens.py ship <name> move <x> <y> [--speed=<kn>]
+  led_sens.py ship shoot <x> <y>
+  led_sens.py mine (set|remove) <x> <y> [--moored | --drifting]
+  led_sens.py (-h | --help)
+  led_sens.py --version
+
+Options:
+  -h --help     Show this screen.
+  --version     Show version.
+  --speed=<kn>  Speed in knots [default: 10].
+  --moored      Moored (anchored) mine.
+  --drifting    Drifting mine.
+
+"""
+
 from __future__ import print_function
 
 import RPi.GPIO as GPIO
@@ -9,6 +31,8 @@ import numpy
 import pprint
 import sys
 import time
+
+from docopt import docopt
 
 # Uncomment to remote debug
 #import pydevd; pydevd.settrace('192.168.178.80')
@@ -165,7 +189,7 @@ def setup():
                             i2c=1)
 
 
-def loop():
+def app():
     global tcs
     while 42:
         detect_cube()
@@ -184,10 +208,15 @@ def endprogram():
 
 
 def main():
+    args = docopt(__doc__, version='LED Sensing')
+    print(args)
     setup()
 
     try:
-        loop()
+        if args['app'] == True:
+            app()
+        else:
+            print('Not implemented')
 
     except KeyboardInterrupt:
         endprogram()
