@@ -3,8 +3,10 @@
 
 """LED Sensing.
 
-Usage:
+Usage:q
   led_sens.py app
+  led_sens.py meas (on|off)
+  led_sens.py detect
   led_sens.py ship new <name>...
   led_sens.py ship new <name>...
   led_sens.py ship new <name>...
@@ -97,6 +99,12 @@ def measure_rgb(debug=False):
         print('R: %5d G: %5d B: %5d' % (r, g, b))
     return r, g, b
 
+
+def led(on_off):
+    if on_off == True:
+        led_on()
+    else:
+        led_off()
 
 def led_on():
     GPIO.output(GPIO_LED, GPIO.HIGH)
@@ -203,6 +211,17 @@ def app():
         detect_cube_removal()
 
 
+def meas(led_on):
+    global tcs
+
+    led(led_on)
+
+    while 42:
+        time.sleep(0.1)
+        r, g, b, c = measure()
+        print('R: %5d G: %5d B: %5d C: %5d' % (r, g, b, c))
+
+
 def endprogram():
     GPIO.cleanup()
 
@@ -215,6 +234,8 @@ def main():
     try:
         if args['app'] == True:
             app()
+        elif args['meas'] == True:
+            meas(args['on'])
         else:
             print('Not implemented')
 
