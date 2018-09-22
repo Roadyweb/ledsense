@@ -251,10 +251,10 @@ def app(config_det, config_rgb, config_color):
               (color[0], color[2], str(res), str(color[1])))
         detect_cube_removal(det_threshold)
 
-def getKey(item):
-    return item[0]
-
 def color_analyse(config_color):
+
+    def getKey(item):
+        return item[0]
 
     res = []
 
@@ -263,7 +263,7 @@ def color_analyse(config_color):
     for color1 in config_color:
         del config_color2[0]
         for color2 in config_color2:
-            print(color1, color2)
+            # print(color1, color2)
             dist = get_rgb_distance(color1[1], color2[1])
             res.append((dist, color1, color2))
 
@@ -279,6 +279,23 @@ def color_analyse(config_color):
         rgb2 = entry[2][1]
         print('Dist: %4d (%-25s %-25s) : %25s %25s' %
               (dist, name1, name2, str(rgb1), str(rgb2)))
+
+    dist = []
+    for i in sorted_res:
+        dist.append(i[0])
+    # print(dist)
+
+    print('Distance   - Avg: %5d Std: %5d, Min: %5d, Max: %5d' %
+          (numpy.mean(dist), numpy.std(dist), min(dist), max(dist)))
+
+    rgb_len = []
+    for i in config_color:
+        rgb_len.append(get_rgb_length(i[1]))
+    # print(rgb_len)
+
+    print('RGB Length - Avg: %5d Std: %5d, Min: %5d, Max: %5d' %
+          (numpy.mean(rgb_len), numpy.std(rgb_len), min(rgb_len), max(rgb_len)))
+
 
 
 def detect(config):
