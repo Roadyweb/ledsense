@@ -4,12 +4,11 @@
 """LED Sensing.
 
 Usage:q
-  led_sens.py app
+  led_sens.py app [CONFIG]
+  led_sens.py detect
   led_sens.py diff
   led_sens.py meas (on|off)
-  led_sens.py detect
-  led_sens.py ship new <name>...
-  led_sens.py ship new <name>...
+  led_sens.py play
   led_sens.py ship new <name>...
   led_sens.py ship <name> move <x> <y> [--speed=<kn>]
   led_sens.py ship shoot <x> <y>
@@ -34,6 +33,7 @@ import numpy
 import pprint
 import sys
 import time
+import yaml
 
 from docopt import docopt
 
@@ -43,14 +43,12 @@ from docopt import docopt
 
 GPIO_LED=4
 
-DET_CUBE_THRESHOLD=2
+DEF_DET_THRESHOLD=2
 
-STABLE_RGB_CNT=5
-STABLE_RGB_DIST=10
+DEF_RGB_STABLE_CNT=5
+DEF_RGB_STABLE_DIST=10
 
-tcs = None
-
-COLORS = [
+DEF_COLORS = [
     # Gelbtöne
     ['RAL 1000 - Grünbeige'    , [4080.0, 3300.0, 2328.0]],
     ['RAL 1001 - Beige'        , [4188.0, 3079.0, 2263.0]],
@@ -85,6 +83,25 @@ COLORS = [
     ['RAL 5023 - Fernblau'     , [1351.0, 1440.0, 1592.0]],
 ]
 
+DEF_SENSOR_INTEGRATIONTIME = TCS34725.TCS34725_INTEGRATIONTIME_50MS,
+DEF_SENSOR_GAIN = TCS34725.TCS34725_GAIN_16X,
+
+DEF_CONFIG = {
+    'det': {'threshold': DEF_DET_THRESHOLD},
+    'rgb': {
+        'stable_cnt' : DEF_RGB_STABLE_CNT,
+        'stable_dist': DEF_RGB_STABLE_DIST
+     },
+    'color': DEF_COLORS,
+    'sensor': {
+        'integration_time': DEF_SENSOR_INTEGRATIONTIME,
+        'gain':             DEF_SENSOR_GAIN
+    }
+}
+
+
+tcs = None
+
 
 def measure(debug=False):
     r, g, b, c = tcs.get_raw_data()
@@ -107,6 +124,7 @@ def led(on_off):
     else:
         led_off()
 
+
 def led_on():
     GPIO.output(GPIO_LED, GPIO.HIGH)
 
@@ -115,31 +133,30 @@ def led_off():
     GPIO.output(GPIO_LED, GPIO.LOW)
 
 
-def detect_cube(thres=DET_CUBE_THRESHOLD):
+def detect_cube(thres=DEF_DET_THRESHOLD):
     ''' Cube is detected by measuring the clear brightness. If the brightness
         falls below the threshold it is assumed the the cube shields all
-        surrounding light.
+        surrounding light, returns the measured clear reading.
     '''
     led_off()
     time.sleep(0.1)
     while 42:
         r, g, b, c = measure()
         if c < thres:
-            return
+            return c
 
 
-def detect_cube_removal(thres=DET_CUBE_THRESHOLD):
+def detect_cube_removal(thres=DEF_DET_THRESHOLD):
     ''' Cube is detected by measuring the clear brightness. If the brightness
         falls below the threshold it is assumed the the cube shields all
-        surrounding light.
+        surrounding light, returns the measured clear reading.
     '''
     led_off()
     time.sleep(0.1)
     while 42:
         r, g, b, c = measure()
         if c > thres:
-            return
-
+            return c
 
 
 def get_rgb_distance(rgb1, rgb2):
@@ -157,7 +174,7 @@ def get_rgb_length(rgb):
     return numpy.linalg.norm(rgb)
 
 
-def get_stable_rgb(count=STABLE_RGB_CNT, dist_limit=STABLE_RGB_DIST):
+def get_stable_rgb(count=DEF_RGB_STABLE_CNT, dist_limit=DEF_RGB_STABLE_DIST):
     ''' If a number of consecutive (count) RGB measurements is within a maximum
         distance (dist_limit) the average of all measurements is calculated and returned.
     '''
@@ -177,13 +194,14 @@ def get_stable_rgb(count=STABLE_RGB_CNT, dist_limit=STABLE_RGB_DIST):
     median = list(numpy.median(res, axis=0))
     return median
 
+
 def get_color(rgb):
-    ''' Takes an RGB list as argument and matches against COLORS the closest
+    ''' Takes an RGB list as argument and matches against DEF_COLORS the closest
         will be uses as match
     '''
     min_dist = 999999999
     match = 0
-    for color in COLORS:
+    for color in DEF_COLORS:
         color_name = color[0]
         color_rgb = color[1]
         dist = get_rgb_distance(rgb, color_rgb)
@@ -191,7 +209,6 @@ def get_color(rgb):
             min_dist = dist
             match = color
     return match[0], match[1], min_dist
-
 
 
 def setup():
@@ -216,6 +233,16 @@ def app():
         print('%-30s - Distance: %5d - Cur. RGB: %-25s RGB %-20s' % 
               (color[0], color[2], str(res), str(color[1])))
         detect_cube_removal()
+
+
+def detect():
+    global tcs
+    while 42:
+        print('Dectect Threshold: %5d' % DET_CUBE_THRESHOLD)
+        value = detect_cube(DET_CUBE_THRESHOLD)
+        print('Cube detected           %5d' % value)
+        value = detect_cube_removal(DET_CUBE_THRESHOLD)
+        print('Cube removal detected   %5d' % value)
 
 
 def diff():
@@ -251,6 +278,12 @@ def meas(led_on):
         print('R: %5d G: %5d B: %5d C: %5d' % (r, g, b, c))
 
 
+def play():
+    data = DEF_CONFIG
+    
+    with open('config_default.yaml', 'w') as outfile:
+        yaml.dump(data, outfile, indent=4)
+
 def endprogram():
     GPIO.cleanup()
 
@@ -263,10 +296,14 @@ def main():
     try:
         if args['app'] == True:
             app()
+        elif args['detect'] == True:
+            detect()
         elif args['diff'] == True:
             diff()
         elif args['meas'] == True:
             meas(args['on'])
+        elif args['play'] == True:
+            play()
         else:
             print('Not implemented')
 
