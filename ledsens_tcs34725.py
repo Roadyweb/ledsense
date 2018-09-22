@@ -8,7 +8,7 @@ Usage:
   led_sens.py color analyse [CONFIG]
   led_sens.py detect [CONFIG]
   led_sens.py diff
-  led_sens.py meas (on|off)
+  led_sens.py meas (on|off|toggle)
   led_sens.py play
   led_sens.py save_default
   led_sens.py rgb stable [CONFIG]
@@ -34,6 +34,7 @@ from __future__ import print_function
 import RPi.GPIO as GPIO
 import TCS34725
 import copy
+import datetime
 import numpy
 import pprint
 import sys
@@ -49,10 +50,13 @@ GPIO_LED = 4
 
 tcs = None
 
+LED_TOGGLE_HOLDOFF = 0.1
+MEAS_HOLDOFF = 0.01
+
 
 def measure(debug=False):
+    time.sleep(MEAS_HOLDOFF)
     r, g, b, c = tcs.get_raw_data()
-    time.sleep(0.05)
     if debug:
         print('R: %5d G: %5d B: %5d C: %5d' % (r, g, b, c))
     return r, g, b, c
@@ -74,10 +78,12 @@ def led(on_off):
 
 def led_on():
     GPIO.output(GPIO_LED, GPIO.HIGH)
+    time.sleep(LED_TOGGLE_HOLDOFF)
 
 
 def led_off():
     GPIO.output(GPIO_LED, GPIO.LOW)
+    time.sleep(LED_TOGGLE_HOLDOFF)
 
 
 def detect_cube(thres):
@@ -86,7 +92,6 @@ def detect_cube(thres):
         surrounding light, returns the measured clear reading.
     """
     led_off()
-    time.sleep(0.1)
     while 42:
         r, g, b, c = measure()
         if c < thres:
@@ -99,7 +104,6 @@ def detect_cube_removal(thres):
         surrounding light, returns the measured clear reading.
     """
     led_off()
-    time.sleep(0.1)
     while 42:
         r, g, b, c = measure()
         if c > thres:
@@ -162,7 +166,7 @@ def setup(config):
     GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(GPIO_LED, GPIO.OUT)
-    time.sleep(0.3)
+    time.sleep(0.05)
     global tcs
     integration_time = config['integration_time'][0]
     gain = config['gain'][0]
@@ -182,7 +186,6 @@ def app(config_det, config_rgb, config_color):
     while 42:
         detect_cube(det_threshold)
         led_on()
-        time.sleep(0.1)
         res = get_stable_rgb(rgb_stable_cnt, rgb_stable_dist)
         # print(res)
         color = get_color(res, config_color)
@@ -190,8 +193,8 @@ def app(config_det, config_rgb, config_color):
               (color[0], color[2], str(res), str(color[1])))
         detect_cube_removal(det_threshold)
 
-def color_analyse(config_color):
 
+def color_analyse(config_color):
     def getKey(item):
         return item[0]
 
@@ -236,7 +239,6 @@ def color_analyse(config_color):
           (numpy.mean(rgb_len), numpy.std(rgb_len), min(rgb_len), max(rgb_len)))
 
 
-
 def detect(config):
     global tcs
     threshold = config['threshold']
@@ -252,11 +254,9 @@ def diff():
 
     while 42:
         led_on()
-        time.sleep(0.1)
         r, g, b, c = measure()
         # print('R: %5d G: %5d B: %5d C: %5d' % (r, g, b, c))
         led_off()
-        time.sleep(0.1)
         r2, g2, b2, c2 = measure()
         # print('R: %5d G: %5d B: %5d C: %5d' % (r2, g2, b2, c2))
         rgb = (r, g, b)
@@ -269,19 +269,96 @@ def diff():
               (rgb_len, rgb2_len, rgb_diff, c, c2, clear_diff))
 
 
-def meas(led_on):
+class draw_diagram(object):
+    def __init__(self, width):
+        self.width = width
+        self.max = 1
+        self.max_updated = False
+        self.last_value = 0
+
+    def add(self, value):
+        self.last_value = value
+        if value > self.max:
+            self.max = value
+            self.max_updated = True
+
+    def getstr(self):
+        pos_raw = 1.0 * self.last_value / self.max
+        pos = int(1.0 * pos_raw * self.width)
+        # print('%5f %5f %f' % (pos_raw, pos, self.max))
+        str = '%s%s' % (pos * ' ', 'O')
+        if self.max_updated:
+            str += (self.width - 2 - pos) * ' ' + ' !!! Max Updated !!!'
+            self.max_updated = False
+        return str
+
+
+def meas(conf_led_on, toggle):
     global tcs
 
-    led(led_on)
+    dd = draw_diagram(40)
+
+    if toggle:
+        while 42:
+            led_on()
+            for _ in range(3):
+                r, g, b, c = measure()
+                dd.add(r)
+                print('R: %5d G: %5d B: %5d C: %5d | %-40s' %
+                      (r, g, b, c, dd.getstr()))
+
+            led_off()
+            for _ in range(3):
+                r, g, b, c = measure()
+                dd.add(r)
+                print('R: %5d G: %5d B: %5d C: %5d | %-40s' %
+                      (r, g, b, c, dd.getstr()))
+
+    led(conf_led_on)
 
     while 42:
-        time.sleep(0.1)
         r, g, b, c = measure()
         print('R: %5d G: %5d B: %5d C: %5d' % (r, g, b, c))
 
 
 def play():
-    data = DEF_CONFIG
+    global LED_TOGGLE_HOLDOFF
+    sleep_duration = LED_TOGGLE_HOLDOFF
+    global MEAS_HOLDOFF
+    meas_holdoff = MEAS_HOLDOFF
+    rep_cnt = 5
+    cycle_cnt = 3
+
+    dd = draw_diagram(40)
+
+    while 42:
+        # sleep_duration = 0.95 * sleep_duration
+        # LED_TOGGLE_HOLDOFF = sleep_duration
+        # print('Setting to %f' % LED_TOGGLE_HOLDOFF)
+        meas_holdoff = 0.95 * meas_holdoff
+        MEAS_HOLDOFF = meas_holdoff
+        print('Setting to %f' % MEAS_HOLDOFF)
+        start = datetime.datetime.now()
+        for i in range(cycle_cnt):
+            led_on()
+            for _ in range(rep_cnt):
+                r, g, b, c = measure()
+                dd.add(r)
+                print('R: %5d G: %5d B: %5d C: %5d | %-40s' %
+                      (r, g, b, c, dd.getstr()))
+
+            led_off()
+            for _ in range(rep_cnt):
+                r, g, b, c = measure()
+                dd.add(r)
+                print('R: %5d G: %5d B: %5d C: %5d | %-40s' %
+                      (r, g, b, c, dd.getstr()))
+        duration = datetime.datetime.now() - start
+        duration_ms = int(duration.total_seconds() * 1000)
+        meas_cnt = cycle_cnt * 2 * rep_cnt
+        print('Duration for %d measurements: %5d ms' % (meas_cnt, duration_ms))
+        print('Duration per measurements: %5d ms' % (duration_ms / meas_cnt))
+        time.sleep(2)
 
 
 def rgb_stable(config_rgb):
@@ -318,7 +395,7 @@ def main():
         elif args['diff']:
             diff()
         elif args['meas']:
-            meas(args['on'])
+            meas(args['on'], args['toggle'])
         elif args['play']:
             play()
         elif args['save_default']:
