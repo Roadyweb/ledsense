@@ -3,8 +3,9 @@
 
 """LED Sensing.
 
-Usage:q
+Usage:
   led_sens.py app [CONFIG]
+  led_sens.py color analyse [CONFIG]
   led_sens.py detect [CONFIG]
   led_sens.py diff
   led_sens.py meas (on|off)
@@ -32,6 +33,7 @@ from __future__ import print_function
 
 import RPi.GPIO as GPIO
 import TCS34725
+import copy
 import numpy
 import pprint
 import sys
@@ -249,6 +251,35 @@ def app(config_det, config_rgb, config_color):
               (color[0], color[2], str(res), str(color[1])))
         detect_cube_removal(det_threshold)
 
+def getKey(item):
+    return item[0]
+
+def color_analyse(config_color):
+
+    res = []
+
+    # Calculate distance between all colors
+    config_color2 = copy.deepcopy(config_color)
+    for color1 in config_color:
+        del config_color2[0]
+        for color2 in config_color2:
+            print(color1, color2)
+            dist = get_rgb_distance(color1[1], color2[1])
+            res.append((dist, color1, color2))
+
+    # Print results
+    # pprint.pprint(res)
+    sorted_res = sorted(res, key=getKey)
+    # pprint.pprint(sorted_res)
+    for entry in sorted_res:
+        dist = entry[0]
+        name1 = entry[1][0]
+        rgb1 = entry[1][1]
+        name2 = entry[2][0]
+        rgb2 = entry[2][1]
+        print('Dist: %4d (%-25s %-25s) : %25s %25s' %
+              (dist, name1, name2, str(rgb1), str(rgb2)))
+
 
 def detect(config):
     global tcs
@@ -340,6 +371,8 @@ def main():
     try:
         if args['app']:
             app(config['det'], config['rgb'], config['color'])
+        elif args['color'] == True and args['analyse'] == True:
+            color_analyse(config['color'])
         elif args['detect']:
             detect(config['det'])
         elif args['diff']:
