@@ -224,18 +224,23 @@ def setup(config):
                             i2c=1)
 
 
-def app():
+def app(config_det, config_rgb):
     global tcs
+    det_threshold = config_det['threshold']
+    rgb_stable_cnt = config_rgb['stable_cnt']
+    rgb_stable_dist = config_rgb['stable_dist']
+    print('Starting app with thres: %5d, stable count: %5d, stable_dist: %5d' %
+          (det_threshold, rgb_stable_cnt, rgb_stable_dist))
     while 42:
-        detect_cube()
+        detect_cube(det_threshold)
         led_on()
         time.sleep(0.1)
-        res = get_stable_rgb()
+        res = get_stable_rgb(rgb_stable_cnt, rgb_stable_dist)
         #print(res)
         color = get_color(res)
-        print('%-30s - Distance: %5d - Cur. RGB: %-25s RGB %-20s' % 
+        print('%-30s - Distance: %5d - Cur. RGB: %-25s RGB %-20s' %
               (color[0], color[2], str(res), str(color[1])))
-        detect_cube_removal()
+        detect_cube_removal(det_threshold)
 
 
 def detect(config):
@@ -314,7 +319,7 @@ def main():
 
     try:
         if args['app'] == True:
-            app()
+            app(config['det'], config['rgb'])
         elif args['detect'] == True:
             detect(config['det'])
         elif args['diff'] == True:
