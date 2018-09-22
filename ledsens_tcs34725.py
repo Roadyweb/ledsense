@@ -51,11 +51,9 @@ GPIO_LED = 4
 tcs = None
 
 LED_TOGGLE_HOLDOFF = 0.1
-MEAS_HOLDOFF = 0.01
 
 
 def measure(debug=False):
-    time.sleep(MEAS_HOLDOFF)
     r, g, b, c = tcs.get_raw_data()
     if debug:
         print('R: %5d G: %5d B: %5d C: %5d' % (r, g, b, c))
@@ -324,20 +322,15 @@ def meas(conf_led_on, toggle):
 def play():
     global LED_TOGGLE_HOLDOFF
     sleep_duration = LED_TOGGLE_HOLDOFF
-    global MEAS_HOLDOFF
-    meas_holdoff = MEAS_HOLDOFF
     rep_cnt = 5
     cycle_cnt = 3
 
     dd = draw_diagram(40)
 
     while 42:
-        # sleep_duration = 0.95 * sleep_duration
-        # LED_TOGGLE_HOLDOFF = sleep_duration
-        # print('Setting to %f' % LED_TOGGLE_HOLDOFF)
-        meas_holdoff = 0.95 * meas_holdoff
-        MEAS_HOLDOFF = meas_holdoff
-        print('Setting to %f' % MEAS_HOLDOFF)
+        sleep_duration = 0.95 * sleep_duration
+        LED_TOGGLE_HOLDOFF = sleep_duration
+        print('Setting to %f' % LED_TOGGLE_HOLDOFF)
         start = datetime.datetime.now()
         for i in range(cycle_cnt):
             led_on()
