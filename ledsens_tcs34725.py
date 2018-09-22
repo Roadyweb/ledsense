@@ -203,13 +203,13 @@ def get_stable_rgb(count=DEF_RGB_STABLE_CNT, dist_limit=DEF_RGB_STABLE_DIST):
     return median
 
 
-def get_color(rgb):
+def get_color(rgb, colors):
     ''' Takes an RGB list as argument and matches against DEF_COLORS the closest
         will be uses as match
     '''
     min_dist = 999999999
     match = 0
-    for color in DEF_COLORS:
+    for color in colors:
         color_name = color[0]
         color_rgb = color[1]
         dist = get_rgb_distance(rgb, color_rgb)
@@ -232,7 +232,7 @@ def setup(config):
                             i2c=1)
 
 
-def app(config_det, config_rgb):
+def app(config_det, config_rgb, config_color):
     global tcs
     det_threshold = config_det['threshold']
     rgb_stable_cnt = config_rgb['stable_cnt']
@@ -245,7 +245,7 @@ def app(config_det, config_rgb):
         time.sleep(0.1)
         res = get_stable_rgb(rgb_stable_cnt, rgb_stable_dist)
         #print(res)
-        color = get_color(res)
+        color = get_color(res, config_color)
         print('%-30s - Distance: %5d - Cur. RGB: %-25s RGB %-20s' %
               (color[0], color[2], str(res), str(color[1])))
         detect_cube_removal(det_threshold)
@@ -340,7 +340,7 @@ def main():
 
     try:
         if args['app'] == True:
-            app(config['det'], config['rgb'])
+            app(config['det'], config['rgb'], config['color'])
         elif args['detect'] == True:
             detect(config['det'])
         elif args['diff'] == True:
