@@ -5,7 +5,7 @@
 
 Usage:q
   led_sens.py app [CONFIG]
-  led_sens.py detect
+  led_sens.py detect [CONFIG]
   led_sens.py diff
   led_sens.py meas (on|off)
   led_sens.py play
@@ -238,14 +238,14 @@ def app():
         detect_cube_removal()
 
 
-def detect():
+def detect(config):
     global tcs
+    threshold = config['threshold']
     while 42:
-        print('Dectect Threshold: %5d' % DET_CUBE_THRESHOLD)
-        value = detect_cube(DET_CUBE_THRESHOLD)
-        print('Cube detected           %5d' % value)
-        value = detect_cube_removal(DET_CUBE_THRESHOLD)
-        print('Cube removal detected   %5d' % value)
+        value = detect_cube(threshold)
+        print('Cube detected           %5d - %5d' % (value, threshold))
+        value = detect_cube_removal(threshold)
+        print('Cube removal detected   %5d - %5d' % (value, threshold))
 
 
 def diff():
@@ -316,7 +316,7 @@ def main():
         if args['app'] == True:
             app()
         elif args['detect'] == True:
-            detect()
+            detect(config['det'])
         elif args['diff'] == True:
             diff()
         elif args['meas'] == True:
