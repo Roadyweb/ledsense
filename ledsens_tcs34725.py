@@ -9,6 +9,8 @@ Usage:q
   led_sens.py diff
   led_sens.py meas (on|off)
   led_sens.py play
+  led_sens.py save_default
+
   led_sens.py ship new <name>...
   led_sens.py ship <name> move <x> <y> [--speed=<kn>]
   led_sens.py ship shoot <x> <y>
@@ -42,6 +44,10 @@ from docopt import docopt
 
 
 GPIO_LED=4
+
+DEF_CONFIG_FN='config_default.yaml'
+
+DEF_DESCRIPTION='DEFAULT DESCRIPTION'
 
 DEF_DET_THRESHOLD=2
 
@@ -87,6 +93,7 @@ DEF_SENSOR_INTEGRATIONTIME = TCS34725.TCS34725_INTEGRATIONTIME_50MS,
 DEF_SENSOR_GAIN = TCS34725.TCS34725_GAIN_16X,
 
 DEF_CONFIG = {
+    'desc': DEF_DESCRIPTION,
     'det': {'threshold': DEF_DET_THRESHOLD},
     'rgb': {
         'stable_cnt' : DEF_RGB_STABLE_CNT,
@@ -287,8 +294,9 @@ def meas(led_on):
 
 
 def config_save_default():
-    with open('config_default.yaml', 'w') as outfile:
-        yaml.dump(data, outfile, indent=4)
+    print('Saving default config to %s' % DEF_CONFIG_FN)
+    with open(DEF_CONFIG_FN, 'w') as outfile:
+        yaml.dump(DEF_CONFIG, outfile, indent=4)
 
 
 def config_load(fname):
@@ -328,6 +336,8 @@ def main():
             meas(args['on'])
         elif args['play'] == True:
             play()
+        elif args['save_default'] == True:
+            config_save_default()
         else:
             print('Not implemented')
 
