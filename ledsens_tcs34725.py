@@ -328,7 +328,7 @@ def play():
     dd = draw_diagram(40)
 
     while 42:
-        sleep_duration = 0.95 * sleep_duration
+        # sleep_duration = 0.95 * sleep_duration
         LED_TOGGLE_HOLDOFF = sleep_duration
         start = datetime.datetime.now()
         for i in range(cycle_cnt):
