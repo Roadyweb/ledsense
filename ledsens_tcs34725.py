@@ -211,13 +211,16 @@ def get_color(rgb):
     return match[0], match[1], min_dist
 
 
-def setup():
+def setup(config):
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(GPIO_LED, GPIO.OUT)
     time.sleep(0.3)
-    global tcs 
-    tcs = TCS34725.TCS34725(integration_time=TCS34725.TCS34725_INTEGRATIONTIME_50MS,
-                            gain            =TCS34725.TCS34725_GAIN_16X,
+    global tcs
+    integration_time = config['integration_time'][0]
+    gain = config['gain'][0]
+    print('Setting TCS config: Integration time: %5d Gain: %5d' % (integration_time, gain))
+    tcs = TCS34725.TCS34725(integration_time=integration_time,
+                            gain            =gain,
                             i2c=1)
 
 
@@ -307,7 +310,7 @@ def main():
     print(args)
     config = config_load(args['CONFIG'])
     pprint.pprint(config)
-    setup()
+    setup(config['sensor'])
 
     try:
         if args['app'] == True:
