@@ -407,9 +407,9 @@ if __name__ == '__main__':
     import cProfile
     import pstats
 
-    cProfile.run('main()', 'restats')
-    p = pstats.Stats('restats')
-    p.sort_stats('cumulative')
-    p.print_stats()
+    # cProfile.run('main()', 'restats')
+    # p = pstats.Stats('restats')
+    # p.sort_stats('cumulative')
+    # p.print_stats()
     #p.strip_dirs().sort_stats(-1).print_stats()
-    #main()
+    main()

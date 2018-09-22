@@ -223,7 +223,7 @@ class TCS34725(object):
         b = self._readU16LE(TCS34725_BDATAL)
         c = self._readU16LE(TCS34725_CDATAL)
         # Delay for the integration time to allow for next reading immediately.
-        #time.sleep(INTEGRATION_TIME_DELAY[self._integration_time])
+        time.sleep(INTEGRATION_TIME_DELAY[self._integration_time])
         return (r, g, b, c)
 
     def set_interrupt(self, enabled):

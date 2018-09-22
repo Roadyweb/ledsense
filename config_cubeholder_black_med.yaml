@@ -1,17 +1,17 @@
 color:
 -   - "Würfel blau"
-    - [3073.0, 3590.0, 3641.0]
+    - [3049.0, 3580.0, 3656.0]
 -   - "Würfel gelb"
-    - [5679.0, 4611.0, 3050.0]
+    - [5877.0, 4771.0, 3147.0]
 -   - "Würfel orange"
-    - [5047.0, 3376.0, 2668.0]
+    - [5129.0, 3434.0, 2719.0]
 -   - "Würfel weiss"
-    - [5888.0, 5318.0, 4703.0]
+    - [6037.0, 5466.0, 4849.0]
 -   - "Würfel rot"
-    - [4463.0, 2789.0, 2687.0]
+    - [4623.0, 2855.0, 2770.0]
 desc: "Configuration file für ersten Testaufbau mit Würfelhalter und schwarzen Schirmwürfel mittel"
-det: {threshold: 10}
-rgb: {stable_cnt: 5, stable_dist: 10}
+det: {threshold: 2}
+rgb: {stable_cnt: 10, stable_dist: 7}
 sensor:
     gain: !!python/tuple [2]
     integration_time: !!python/tuple [235]
