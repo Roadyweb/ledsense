@@ -1,0 +1,17 @@
+color:
+-   - "Würfel blau"
+    - [3073.0, 3590.0, 3641.0]
+-   - "Würfel gelb"
+    - [5679.0, 4611.0, 3050.0]
+-   - "Würfel orange"
+    - [5047.0, 3376.0, 2668.0]
+-   - "Würfel weiss"
+    - [5888.0, 5318.0, 4703.0]
+-   - "Würfel rot"
+    - [4463.0, 2789.0, 2687.0]
+desc: "Configuration file für ersten Testaufbau mit Würfelhalter und schwarzen Schirmwürfel mittel"
+det: {threshold: 10}
+rgb: {stable_cnt: 5, stable_dist: 10}
+sensor:
+    gain: !!python/tuple [2]
+    integration_time: !!python/tuple [235]
