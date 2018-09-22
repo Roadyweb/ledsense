@@ -10,6 +10,7 @@ Usage:q
   led_sens.py meas (on|off)
   led_sens.py play
   led_sens.py save_default
+  led_sens.py rgb stable [CONFIG]
 
   led_sens.py ship new <name>...
   led_sens.py ship <name> move <x> <y> [--speed=<kn>]
@@ -313,6 +314,18 @@ def play():
     data = DEF_CONFIG
 
 
+def rgb_stable(config_rgb):
+    rgb_stable_cnt = config_rgb['stable_cnt']
+    rgb_stable_dist = config_rgb['stable_dist']
+    print('Starting rgb_stable with stable count: %5d, stable_dist: %5d' %
+          (rgb_stable_cnt, rgb_stable_dist))
+    led_on()
+
+    while 42:
+        res = get_stable_rgb(rgb_stable_cnt, rgb_stable_dist)
+        #print(res)
+        print('RGB: %25s' % str(res))
+
 
 def endprogram():
     GPIO.cleanup()
@@ -338,6 +351,8 @@ def main():
             play()
         elif args['save_default'] == True:
             config_save_default()
+        elif args['rgb'] == True and args['stable'] == True:
+            rgb_stable(config['rgb'])
         else:
             print('Not implemented')
 
