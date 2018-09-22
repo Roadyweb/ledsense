@@ -221,6 +221,7 @@ def get_color(rgb, colors):
 
 
 def setup(config):
+    GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(GPIO_LED, GPIO.OUT)
     time.sleep(0.3)
