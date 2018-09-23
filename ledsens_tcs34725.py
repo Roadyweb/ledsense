@@ -35,6 +35,7 @@ from __future__ import print_function
 import RPi.GPIO as GPIO
 import TCS34725
 import copy
+import colorsys
 import datetime
 import numpy
 import pprint
@@ -46,6 +47,7 @@ from docopt import docopt
 # Uncomment to remote debug
 # import pydevd; pydevd.settrace('192.168.178.80')
 from config import DEF_CONFIG, config_save_default, config_load
+from helper import draw_diagram, get_rgb_distance, get_rgb_length
 
 GPIO_LED = 4
 
@@ -54,6 +56,7 @@ tcs = None
 # Should be probably left this value. Because it add 10% mmargin to the determined threshold
 # 0.053 s = Threshold
 LED_TOGGLE_HOLDOFF = 0.060
+
 
 # LED_TOGGLE_HOLDOFF = 0.053
 
@@ -113,21 +116,6 @@ def detect_cube_removal(thres):
             return c
 
 
-def get_rgb_distance(rgb1, rgb2):
-    """ This function expects two tuples with RGB values and calculates the distance between both
-        vectors.
-    """
-    rgb1 = numpy.array(rgb1)
-    rgb2 = numpy.array(rgb2)
-    return numpy.linalg.norm(rgb1 - rgb2)
-
-
-def get_rgb_length(rgb):
-    """ This function expects one tuples with RGB values and calculates the length of the vector.
-    """
-    return numpy.linalg.norm(rgb)
-
-
 def get_stable_rgb(count, dist_limit):
     """ If a number of consecutive (count) RGB measurements is within a maximum
         distance (dist_limit) the average of all measurements is calculated and returned.
@@ -165,20 +153,6 @@ def get_color(rgb, colors):
     return match[0], match[1], min_dist
 
 
-def setup(config):
-    GPIO.setwarnings(False)
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(GPIO_LED, GPIO.OUT)
-    time.sleep(0.05)
-    global tcs
-    integration_time = config['integration_time'][0]
-    gain = config['gain'][0]
-    print('Setting TCS config: Integration time: %5d Gain: %5d' % (integration_time, gain))
-    tcs = TCS34725.TCS34725(integration_time=integration_time,
-                            gain=gain,
-                            i2c=1)
-
-
 def app(config_det, config_rgb, config_color):
     global tcs
     det_threshold = config_det['threshold']
@@ -202,15 +176,6 @@ def color_analyse(config_color):
         return item[0]
 
     res = []
-
-    # Calculate distance between all colors
-    config_color2 = copy.deepcopy(config_color)
-    for color1 in config_color:
-        del config_color2[0]
-        for color2 in config_color2:
-            # print(color1, color2)
-            dist = get_rgb_distance(color1[1], color2[1])
-            res.append((dist, color1, color2))
 
     # Print results
     # pprint.pprint(res)
@@ -300,82 +265,29 @@ def meas(conf_led_on, toggle):
         print('R: %5d G: %5d B: %5d C: %5d' % (r, g, b, c))
 
 
-class draw_diagram(object):
-    def __init__(self, width, bin=0.01):
-        """ width: set the width of the string that is returned as result
-            bin: bin size precent, All values that fall in the range
-                 0% to bin   <==> 100% - bin to 100%
-                 e.g. for bin = 0.01 = 1%
-                 0% to 1%    <==>  99% to 100% (is evaluated as good)
-                       1%    to    99%         (is evaluated as bad)
-        """
-        self.width = width
-        self.bin = bin
-        self.max = 1
-        self.max_updated = False
-        self.last_value = 0
-        self.stat_reset()
+def play():
+    pass
 
-    def stat_reset(self):
-        self.stat_cnt = 0
-        self.stat_good = 0
-        self.stat_bad_dev = []
 
-    def add(self, value, expected=None):
-        """
+def rgb_stable(config_rgb):
+    rgb_stable_cnt = config_rgb['stable_cnt']
+    rgb_stable_dist = config_rgb['stable_dist']
+    print('Starting rgb_stable with stable count: %5d, stable_dist: %5d' %
+          (rgb_stable_cnt, rgb_stable_dist))
+    led_on()
 
-        :param value:    current value to be added
-        :param expected: None = no expection for value
-                         0 = expected in the lower bin
-                         1 = expected in the upper bin
-        :return:
-        """
-        self.last_value = value
-        self.stat_cnt += 1
-        lower_limit = self.max * self.bin
-        upper_limit = self.max * (1.0 - self.bin)
-        if value < lower_limit or value > upper_limit:
-            self.stat_good += 1
-        else:
-            if expected is not None and expected == 0:
-                self.stat_bad_dev.append(value - (self.bin * self.max))
-            if expected is not None and expected == 1:
-                inter = self.max - value
-                self.stat_bad_dev.append(inter - (self.bin * self.max))
-
-        if value > self.max:
-            self.max = value
-            self.max_updated = True
-            self.stat_reset()
-
-    def getstr(self):
-        pos_raw = 1.0 * self.last_value / self.max
-        pos = round(1.0 * pos_raw * self.width)
-        # print('%5f %5f %f' % (pos_raw, pos, self.max))
-        str = '%s%s' % (pos * ' ', 'O')
-        if self.max_updated:
-            str += (self.width - 2 - pos) * ' ' + ' !!! Max Updated !!!'
-            self.max_updated = False
-        return str
-
-    def get_stat_good_percent(self):
-        return 100.0 * self.stat_good / self.stat_cnt
-
-    def get_stat_cnt(self):
-        return self.stat_cnt
-
-    def get_stat_bad_dev(self):
-        if len(self.stat_bad_dev) == 0:
-            return 0
-        return numpy.mean(self.stat_bad_dev)
+    while 42:
+        res = get_stable_rgb(rgb_stable_cnt, rgb_stable_dist)
+        # print(res)
+        print('RGB: %25s' % str(res))
 
 
 def test_speed():
     global LED_TOGGLE_HOLDOFF
     global tcs
     sleep_duration = 1.0
-#    LED_TOGGLE_HOLDOFF = 1.2 * LED_TOGGLE_HOLDOFF
-#    sleep_duration = LED_TOGGLE_HOLDOFF
+    #    LED_TOGGLE_HOLDOFF = 1.2 * LED_TOGGLE_HOLDOFF
+    #    sleep_duration = LED_TOGGLE_HOLDOFF
     rep_cnt = 2
     cycle_cnt = 20
 
@@ -424,21 +336,18 @@ def test_speed():
             print('Setting: %5.4fms Cnt: %3d Good: %6.2f%% Bad Dev: %6.1f Avg. Dura: %5.2f' % i)
 
 
-def play():
-    pass
-
-
-def rgb_stable(config_rgb):
-    rgb_stable_cnt = config_rgb['stable_cnt']
-    rgb_stable_dist = config_rgb['stable_dist']
-    print('Starting rgb_stable with stable count: %5d, stable_dist: %5d' %
-          (rgb_stable_cnt, rgb_stable_dist))
-    led_on()
-
-    while 42:
-        res = get_stable_rgb(rgb_stable_cnt, rgb_stable_dist)
-        # print(res)
-        print('RGB: %25s' % str(res))
+def setup(config):
+    GPIO.setwarnings(False)
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(GPIO_LED, GPIO.OUT)
+    time.sleep(0.05)
+    global tcs
+    integration_time = config['integration_time'][0]
+    gain = config['gain'][0]
+    print('Setting TCS config: Integration time: %5d Gain: %5d' % (integration_time, gain))
+    tcs = TCS34725.TCS34725(integration_time=integration_time,
+                            gain=gain,
+                            i2c=1)
 
 
 def endprogram():
