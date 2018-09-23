@@ -51,7 +51,7 @@ GPIO_LED = 4
 
 tcs = None
 
-LED_TOGGLE_HOLDOFF = 0.60
+LED_TOGGLE_HOLDOFF = 0.053
 
 
 def measure(debug=False):
@@ -297,17 +297,52 @@ def meas(conf_led_on, toggle):
 
 
 class draw_diagram(object):
-    def __init__(self, width):
+    def __init__(self, width, bin=0.01):
+        """ width: set the width of the string that is returned as result
+            bin: bin size precent, All values that fall in the range
+                 0% to bin   <==> 100% - bin to 100%
+                 e.g. for bin = 0.01 = 1%
+                 0% to 1%    <==>  99% to 100% (is evaluated as good)
+                       1%    to    99%         (is evaluated as bad)
+        """
         self.width = width
+        self.bin = bin
         self.max = 1
         self.max_updated = False
         self.last_value = 0
+        self.stat_reset()
 
-    def add(self, value):
+    def stat_reset(self):
+        self.stat_cnt = 0
+        self.stat_good = 0
+        self.stat_bad_dev = []
+
+    def add(self, value, expected=None):
+        """
+
+        :param value:    current value to be added
+        :param expected: None = no expection for value
+                         0 = expected in the lower bin
+                         1 = expected in the upper bin
+        :return:
+        """
         self.last_value = value
+        self.stat_cnt += 1
+        lower_limit = self.max * self.bin
+        upper_limit = self.max * (1.0 - self.bin)
+        if value < lower_limit or value > upper_limit:
+            self.stat_good += 1
+        else:
+            if expected is not None and expected == 0:
+                self.stat_bad_dev.append(value - (self.bin * self.max))
+            if expected is not None and expected == 1:
+                inter = self.max - value
+                self.stat_bad_dev.append(inter - (self.bin * self.max))
+
         if value > self.max:
             self.max = value
             self.max_updated = True
+            self.stat_reset()
 
     def getstr(self):
         pos_raw = 1.0 * self.last_value / self.max
@@ -319,42 +354,67 @@ class draw_diagram(object):
             self.max_updated = False
         return str
 
+    def get_stat_good_percent(self):
+        return 100.0 * self.stat_good / self.stat_cnt
+
+    def get_stat_cnt(self):
+        return self.stat_cnt
+
+    def get_stat_bad_dev(self):
+        if len(self.stat_bad_dev) == 0:
+            return 0
+        return numpy.mean(self.stat_bad_dev)
+
 
 def test_speed():
     global LED_TOGGLE_HOLDOFF
-    LED_TOGGLE_HOLDOFF = 2 * LED_TOGGLE_HOLDOFF
+    LED_TOGGLE_HOLDOFF = 1.2 * LED_TOGGLE_HOLDOFF
     sleep_duration = LED_TOGGLE_HOLDOFF
     rep_cnt = 2
-    cycle_cnt = 10
+    cycle_cnt = 20
 
     dd = draw_diagram(40)
+    res = []
 
-    while 42:
-        sleep_duration = 0.95 * sleep_duration
-        LED_TOGGLE_HOLDOFF = sleep_duration
-        start = datetime.datetime.now()
-        for i in range(cycle_cnt):
-            led_on()
-            for _ in range(rep_cnt):
-                r, g, b, c = measure()
-                dd.add(r)
-                print('R: %5d G: %5d B: %5d C: %5d | %-40s' %
-                      (r, g, b, c, dd.getstr()))
+    try:
+        while 42:
+            # sleep_duration = 0.98 * sleep_duration
+            LED_TOGGLE_HOLDOFF = sleep_duration
+            start = datetime.datetime.now()
+            for i in range(cycle_cnt):
+                led_on()
+                for _ in range(rep_cnt):
+                    r, g, b, c = measure()
+                    dd.add(r, expected=1)
+                    print('R: %5d G: %5d B: %5d C: %5d | %-40s' %
+                          (r, g, b, c, dd.getstr()))
 
-            led_off()
-            for _ in range(rep_cnt):
-                r, g, b, c = measure()
-                dd.add(r)
-                print('R: %5d G: %5d B: %5d C: %5d | %-40s' %
-                      (r, g, b, c, dd.getstr()))
-        duration = datetime.datetime.now() - start
-        duration_ms = int(duration.total_seconds() * 1000)
-        meas_cnt = cycle_cnt * 2 * rep_cnt
-        print('**** Summary ****')
-        print('Setting to %f' % LED_TOGGLE_HOLDOFF)
-        print('Duration for %d measurements: %5d ms' % (meas_cnt, duration_ms))
-        print('Duration per measurements: %5d ms' % (duration_ms / meas_cnt))
-        time.sleep(2)
+                led_off()
+                for _ in range(rep_cnt):
+                    r, g, b, c = measure()
+                    dd.add(r, expected=0)
+                    print('R: %5d G: %5d B: %5d C: %5d | %-40s' %
+                          (r, g, b, c, dd.getstr()))
+            duration = datetime.datetime.now() - start
+            duration_ms = int(duration.total_seconds() * 1000)
+            meas_cnt = cycle_cnt * 2 * rep_cnt
+            meas_avg_duration = duration_ms / meas_cnt
+            print('**** Summary ****')
+            print('Setting to %f' % LED_TOGGLE_HOLDOFF)
+            print('Duration for %d measurements: %5d ms' % (meas_cnt, duration_ms))
+            print('Duration per measurements: %5d ms' % meas_avg_duration)
+            res.append((LED_TOGGLE_HOLDOFF,
+                        dd.get_stat_cnt(),
+                        dd.get_stat_good_percent(),
+                        dd.get_stat_bad_dev(),
+                        meas_avg_duration))
+            dd.stat_reset()
+            time.sleep(2)
+    except KeyboardInterrupt:
+        print('**** Stats for series ****')
+        for i in res:
+            print('Setting: %5.4fms Cnt: %3d Good: %6.2f%% Bad Dev: %4.1f Avg. Dura: %5.2f' % i)
+
 
 def play():
     pass
@@ -418,5 +478,5 @@ if __name__ == '__main__':
     # p = pstats.Stats('restats')
     # p.sort_stats('cumulative')
     # p.print_stats()
-    #p.strip_dirs().sort_stats(-1).print_stats()
+    # p.strip_dirs().sort_stats(-1).print_stats()
     main()
