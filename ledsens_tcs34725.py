@@ -178,25 +178,59 @@ def color_analyse(config_color):
     res = []
 
     # Print results
-    # pprint.pprint(res)
-    sorted_res = sorted(res, key=getKey)
-    # pprint.pprint(sorted_res)
-    for entry in sorted_res:
-        dist = entry[0]
-        name1 = entry[1][0]
-        rgb1 = entry[1][1]
-        name2 = entry[2][0]
-        rgb2 = entry[2][1]
-        print('Dist: %4d (%-25s %-25s) : %25s %25s' %
-              (dist, name1, name2, str(rgb1), str(rgb2)))
+    print('******************** Distance between all result ********************')
 
-    dist = []
-    for i in sorted_res:
-        dist.append(i[0])
-    # print(dist)
+    def dummy(x, y, z):
+        return x, y, z
 
-    print('Distance   - Avg: %5d Std: %5d, Min: %5d, Max: %5d' %
-          (numpy.mean(dist), numpy.std(dist), min(dist), max(dist)))
+    cs_map = (
+        ('RGB', dummy),
+        ('YIQ', colorsys.rgb_to_yiq),
+        ('HLS', colorsys.rgb_to_hls),
+        ('YIQ', colorsys.rgb_to_hsv)
+    )
+    for cs_name, cs_func in cs_map:
+        res = []
+
+        # Calculate distance between all colors
+        config_color2 = copy.deepcopy(config_color)
+        for color1 in config_color:
+            del config_color2[0]
+            for color2 in config_color2:
+                # print(color1, color2)
+                name1 = color1[0]
+                name2 = color2[0]
+                color1_converted = cs_func(color1[1][0], color1[1][1], color1[1][2])
+                color2_converted = cs_func(color2[1][0], color2[1][1], color2[1][2])
+                dist = get_rgb_distance(color1_converted, color2_converted)
+                res.append((dist, (name1, color1_converted), (name2, color2_converted)))
+
+        print('******************** Colorspace %s **********' % cs_name)
+        # pprint.pprint(res)
+        sorted_res = sorted(res, key=getKey)
+        # pprint.pprint(sorted_res)
+        for entry in sorted_res[:10]:
+            #print(entry)
+            #return
+            dist = entry[0]
+            name1 = entry[1][0]
+            rgb1 = entry[1][1]
+            name2 = entry[2][0]
+            rgb2 = entry[2][1]
+            rgb1_str = '(%8.3f %8.3f %8.3f)' % rgb1
+            rgb2_str = '(%8.3f %8.3f %8.3f)' % rgb2
+            print('%s: Dist: %4d (%-25s %-25s) : %s %s' %
+                  (cs_name, dist, name1, name2, rgb1_str, rgb2_str))
+
+        dist = []
+        for i in sorted_res:
+            dist.append(i[0])
+        # print(dist)
+
+        print('Distance   - Avg: %5d Std: %5d, Min: %5d, Max: %5d' %
+              (numpy.mean(dist), numpy.std(dist), min(dist), max(dist)))
+
+    print('******************** Length for all all colors ********************')
 
     rgb_len = []
     for i in config_color:
