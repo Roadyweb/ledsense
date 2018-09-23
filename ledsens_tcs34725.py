@@ -12,6 +12,7 @@ Usage:
   led_sens.py play
   led_sens.py save_default
   led_sens.py rgb stable [CONFIG]
+  led_sens.py test_speed
 
   led_sens.py ship new <name>...
   led_sens.py ship <name> move <x> <y> [--speed=<kn>]
@@ -50,7 +51,7 @@ GPIO_LED = 4
 
 tcs = None
 
-LED_TOGGLE_HOLDOFF = 0.11
+LED_TOGGLE_HOLDOFF = 0.60
 
 
 def measure(debug=False):
@@ -267,30 +268,6 @@ def diff():
               (rgb_len, rgb2_len, rgb_diff, c, c2, clear_diff))
 
 
-class draw_diagram(object):
-    def __init__(self, width):
-        self.width = width
-        self.max = 1
-        self.max_updated = False
-        self.last_value = 0
-
-    def add(self, value):
-        self.last_value = value
-        if value > self.max:
-            self.max = value
-            self.max_updated = True
-
-    def getstr(self):
-        pos_raw = 1.0 * self.last_value / self.max
-        pos = round(1.0 * pos_raw * self.width)
-        # print('%5f %5f %f' % (pos_raw, pos, self.max))
-        str = '%s%s' % (pos * ' ', 'O')
-        if self.max_updated:
-            str += (self.width - 2 - pos) * ' ' + ' !!! Max Updated !!!'
-            self.max_updated = False
-        return str
-
-
 def meas(conf_led_on, toggle):
     global tcs
 
@@ -319,16 +296,41 @@ def meas(conf_led_on, toggle):
         print('R: %5d G: %5d B: %5d C: %5d' % (r, g, b, c))
 
 
-def play():
+class draw_diagram(object):
+    def __init__(self, width):
+        self.width = width
+        self.max = 1
+        self.max_updated = False
+        self.last_value = 0
+
+    def add(self, value):
+        self.last_value = value
+        if value > self.max:
+            self.max = value
+            self.max_updated = True
+
+    def getstr(self):
+        pos_raw = 1.0 * self.last_value / self.max
+        pos = round(1.0 * pos_raw * self.width)
+        # print('%5f %5f %f' % (pos_raw, pos, self.max))
+        str = '%s%s' % (pos * ' ', 'O')
+        if self.max_updated:
+            str += (self.width - 2 - pos) * ' ' + ' !!! Max Updated !!!'
+            self.max_updated = False
+        return str
+
+
+def test_speed():
     global LED_TOGGLE_HOLDOFF
+    LED_TOGGLE_HOLDOFF = 2 * LED_TOGGLE_HOLDOFF
     sleep_duration = LED_TOGGLE_HOLDOFF
     rep_cnt = 2
-    cycle_cnt = 25
+    cycle_cnt = 10
 
     dd = draw_diagram(40)
 
     while 42:
-        # sleep_duration = 0.95 * sleep_duration
+        sleep_duration = 0.95 * sleep_duration
         LED_TOGGLE_HOLDOFF = sleep_duration
         start = datetime.datetime.now()
         for i in range(cycle_cnt):
@@ -353,6 +355,9 @@ def play():
         print('Duration for %d measurements: %5d ms' % (meas_cnt, duration_ms))
         print('Duration per measurements: %5d ms' % (duration_ms / meas_cnt))
         time.sleep(2)
+
+def play():
+    pass
 
 
 def rgb_stable(config_rgb):
@@ -392,10 +397,12 @@ def main():
             meas(args['on'], args['toggle'])
         elif args['play']:
             play()
-        elif args['save_default']:
-            config_save_default()
         elif args['rgb'] == True and args['stable'] == True:
             rgb_stable(config['rgb'])
+        elif args['save_default']:
+            config_save_default()
+        elif args['test_speed']:
+            test_speed()
         else:
             print('Not implemented')
 
