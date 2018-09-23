@@ -51,7 +51,11 @@ GPIO_LED = 4
 
 tcs = None
 
-LED_TOGGLE_HOLDOFF = 0.053
+# Should be probably left this value. Because it add 10% mmargin to the determined threshold
+# 0.053 s = Threshold
+LED_TOGGLE_HOLDOFF = 0.060
+
+# LED_TOGGLE_HOLDOFF = 0.053
 
 
 def measure(debug=False):
@@ -368,8 +372,10 @@ class draw_diagram(object):
 
 def test_speed():
     global LED_TOGGLE_HOLDOFF
-    LED_TOGGLE_HOLDOFF = 1.2 * LED_TOGGLE_HOLDOFF
-    sleep_duration = LED_TOGGLE_HOLDOFF
+    global tcs
+    sleep_duration = 1.0
+#    LED_TOGGLE_HOLDOFF = 1.2 * LED_TOGGLE_HOLDOFF
+#    sleep_duration = LED_TOGGLE_HOLDOFF
     rep_cnt = 2
     cycle_cnt = 20
 
@@ -378,8 +384,10 @@ def test_speed():
 
     try:
         while 42:
-            # sleep_duration = 0.98 * sleep_duration
-            LED_TOGGLE_HOLDOFF = sleep_duration
+            sleep_duration = 0.98 * sleep_duration
+            # LED_TOGGLE_HOLDOFF = sleep_duration
+            tcs.set_sleep_factor(sleep_duration)
+
             start = datetime.datetime.now()
             for i in range(cycle_cnt):
                 led_on()
@@ -400,10 +408,10 @@ def test_speed():
             meas_cnt = cycle_cnt * 2 * rep_cnt
             meas_avg_duration = duration_ms / meas_cnt
             print('**** Summary ****')
-            print('Setting to %f' % LED_TOGGLE_HOLDOFF)
+            print('Setting to %f' % sleep_duration)
             print('Duration for %d measurements: %5d ms' % (meas_cnt, duration_ms))
             print('Duration per measurements: %5d ms' % meas_avg_duration)
-            res.append((LED_TOGGLE_HOLDOFF,
+            res.append((sleep_duration,
                         dd.get_stat_cnt(),
                         dd.get_stat_good_percent(),
                         dd.get_stat_bad_dev(),
@@ -413,7 +421,7 @@ def test_speed():
     except KeyboardInterrupt:
         print('**** Stats for series ****')
         for i in res:
-            print('Setting: %5.4fms Cnt: %3d Good: %6.2f%% Bad Dev: %4.1f Avg. Dura: %5.2f' % i)
+            print('Setting: %5.4fms Cnt: %3d Good: %6.2f%% Bad Dev: %6.1f Avg. Dura: %5.2f' % i)
 
 
 def play():

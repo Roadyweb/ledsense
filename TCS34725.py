@@ -149,6 +149,7 @@ class TCS34725(object):
         self.set_gain(gain)
         # Enable the device (by default, the device is in power down mode on bootup).
         self.enable()
+        self.sleepfactor = 1.0
 
     def _readU8(self, reg):
         """Read an unsigned 8-bit register."""
@@ -218,7 +219,7 @@ class TCS34725(object):
         numbers).
         """
         # Delay for the integration time to allow proper reading.
-        time.sleep(INTEGRATION_TIME_DELAY[self._integration_time])
+        time.sleep(self.sleepfactor * INTEGRATION_TIME_DELAY[self._integration_time])
 
         # Read each color register.
         r = self._readU16LE(TCS34725_RDATAL)
@@ -226,6 +227,9 @@ class TCS34725(object):
         b = self._readU16LE(TCS34725_BDATAL)
         c = self._readU16LE(TCS34725_CDATAL)
         return (r, g, b, c)
+
+    def set_sleep_factor(self, factor):
+        self.sleepfactor = factor
 
     def set_interrupt(self, enabled):
         """Enable or disable interrupts by setting enabled to True or False."""
