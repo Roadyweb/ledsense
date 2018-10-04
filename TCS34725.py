@@ -142,8 +142,6 @@ class TCS34725(object):
         chip_id = self._readU8(TCS34725_ID)
         if chip_id != 0x44:
             raise RuntimeError('Failed to read TCS34725 chip ID, check your wiring.')
-        else:
-            print('Yeah found TCS34725 in the proper location')
         # Set default integration time and gain.
         self.set_integration_time(integration_time)
         self.set_gain(gain)

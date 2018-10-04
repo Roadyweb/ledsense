@@ -38,6 +38,7 @@ import TCS34725
 import copy
 import colorsys
 import datetime
+import logging
 import numpy
 import pprint
 import sys
@@ -52,7 +53,7 @@ from docopt import docopt
 # import pydevd; pydevd.settrace('192.168.178.80')
 import play_music
 from config import DEF_CONFIG, config_save_default, config_load
-from helper import draw_diagram, get_rgb_distance, get_rgb_length
+from helper import draw_diagram, get_rgb_distance, get_rgb_length, pr, prdbg
 
 
 exit_thread = False
@@ -69,17 +70,20 @@ LED_TOGGLE_HOLDOFF = 0.060
 # LED_TOGGLE_HOLDOFF = 0.053
 
 
+logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', datefmt='%Y.%m.%d %H:%M:%S', level=logging.DEBUG)
+
+
 def measure(debug=False):
     r, g, b, c = tcs.get_raw_data()
     if debug:
-        print('R: %5d G: %5d B: %5d C: %5d' % (r, g, b, c))
+        prdbg('R: %5d G: %5d B: %5d C: %5d' % (r, g, b, c))
     return r, g, b, c
 
 
 def measure_rgb(debug=False):
     r, g, b, c = measure(False)
     if debug:
-        print('R: %5d G: %5d B: %5d' % (r, g, b))
+        prdbg('R: %5d G: %5d B: %5d' % (r, g, b))
     return r, g, b
 
 
@@ -138,7 +142,7 @@ def get_stable_rgb(count, dist_limit):
             if act_dist > max_dist:
                 max_dist = act_dist
         if max_dist > dist_limit:
-            # print('Max Dist: %d Dist Limit: %d Restarting... ' % (max_dist, dist_limit))
+            prdbg('Max Dist: %d Dist Limit: %d Restarting... ' % (max_dist, dist_limit))
             continue
         break
     median = list(numpy.median(res, axis=0))
@@ -166,7 +170,7 @@ def app(config_det, config_rgb, config_color):
     det_threshold = config_det['threshold']
     rgb_stable_cnt = config_rgb['stable_cnt']
     rgb_stable_dist = config_rgb['stable_dist']
-    print('Starting app with thres: %5d, stable count: %5d, stable_dist: %5d' %
+    pr('Starting app with thres: %5d, stable count: %5d, stable_dist: %5d' %
           (det_threshold, rgb_stable_cnt, rgb_stable_dist))
     while 42:
         detect_cube(det_threshold)
@@ -174,20 +178,20 @@ def app(config_det, config_rgb, config_color):
         res = get_stable_rgb(rgb_stable_cnt, rgb_stable_dist)
         # print(res)
         color = get_color(res, config_color)
-        print('%-30s - Distance: %5d - Cur. RGB: %-25s RGB %-20s' %
+        pr('%-15s - Distance: %5d - Cur. RGB: %-25s RGB %-20s' %
               (color[0], color[2], str(res), str(color[1])))
         detect_cube_removal(det_threshold)
+
 
 def app2(config_det, config_rgb, config_color):
     global tcs
     t = threading.Thread(target=play_music.main)
     t.start()
 
-
     det_threshold = config_det['threshold']
     rgb_stable_cnt = config_rgb['stable_cnt']
     rgb_stable_dist = config_rgb['stable_dist']
-    print('Starting app with thres: %5d, stable count: %5d, stable_dist: %5d' %
+    pr('Starting app with thres: %5d, stable count: %5d, stable_dist: %5d' %
           (det_threshold, rgb_stable_cnt, rgb_stable_dist))
     try:
         while 42:
@@ -196,8 +200,9 @@ def app2(config_det, config_rgb, config_color):
             res = get_stable_rgb(rgb_stable_cnt, rgb_stable_dist)
             # print(res)
             color = get_color(res, config_color)
+            play_music.stop_playing = False
             play_music.start_playing = color[0]
-            print('%-30s - Distance: %5d - Cur. RGB: %-25s RGB %-20s' %
+            pr('%-15s - Distance: %5d - Cur. RGB: %-25s RGB %-20s' %
                   (color[0], color[2], str(res), str(color[1])))
             detect_cube_removal(det_threshold)
             play_music.stop_playing = True
@@ -281,9 +286,9 @@ def detect(config):
     threshold = config['threshold']
     while 42:
         value = detect_cube(threshold)
-        print('Cube detected           %5d - %5d' % (value, threshold))
+        pr('Cube detected           %5d - %5d' % (value, threshold))
         value = detect_cube_removal(threshold)
-        print('Cube removal detected   %5d - %5d' % (value, threshold))
+        pr('Cube removal detected   %5d - %5d' % (value, threshold))
 
 
 def diff():
@@ -292,17 +297,17 @@ def diff():
     while 42:
         led_on()
         r, g, b, c = measure()
-        # print('R: %5d G: %5d B: %5d C: %5d' % (r, g, b, c))
+        prdbg('R: %5d G: %5d B: %5d C: %5d' % (r, g, b, c))
         led_off()
         r2, g2, b2, c2 = measure()
-        # print('R: %5d G: %5d B: %5d C: %5d' % (r2, g2, b2, c2))
+        prdbg('R: %5d G: %5d B: %5d C: %5d' % (r2, g2, b2, c2))
         rgb = (r, g, b)
         rgb2 = (r2, g2, b2)
         rgb_len = get_rgb_length(rgb)
         rgb2_len = get_rgb_length(rgb2)
         rgb_diff = get_rgb_distance(rgb, rgb2)
         clear_diff = abs(c - c2)
-        print('Len %5d %5d %5d Clear: %5d %5d %5d' %
+        pr('Len %5d %5d %5d Clear: %5d %5d %5d' %
               (rgb_len, rgb2_len, rgb_diff, c, c2, clear_diff))
 
 
@@ -317,21 +322,21 @@ def meas(conf_led_on, toggle):
             for _ in range(3):
                 r, g, b, c = measure()
                 dd.add(r)
-                print('R: %5d G: %5d B: %5d C: %5d | %-40s' %
+                pr('R: %5d G: %5d B: %5d C: %5d | %-40s' %
                       (r, g, b, c, dd.getstr()))
 
             led_off()
             for _ in range(3):
                 r, g, b, c = measure()
                 dd.add(r)
-                print('R: %5d G: %5d B: %5d C: %5d | %-40s' %
+                pr('R: %5d G: %5d B: %5d C: %5d | %-40s' %
                       (r, g, b, c, dd.getstr()))
 
     led(conf_led_on)
 
     while 42:
         r, g, b, c = measure()
-        print('R: %5d G: %5d B: %5d C: %5d' % (r, g, b, c))
+        pr('R: %5d G: %5d B: %5d C: %5d' % (r, g, b, c))
 
 
 def play():
@@ -341,14 +346,14 @@ def play():
 def rgb_stable(config_rgb):
     rgb_stable_cnt = config_rgb['stable_cnt']
     rgb_stable_dist = config_rgb['stable_dist']
-    print('Starting rgb_stable with stable count: %5d, stable_dist: %5d' %
+    pr('Starting rgb_stable with stable count: %5d, stable_dist: %5d' %
           (rgb_stable_cnt, rgb_stable_dist))
     led_on()
 
     while 42:
         res = get_stable_rgb(rgb_stable_cnt, rgb_stable_dist)
-        # print(res)
-        print('RGB: %25s' % str(res))
+        prdbg(res)
+        pr('RGB: %25s' % str(res))
 
 
 def test_speed():
@@ -413,7 +418,7 @@ def setup(config):
     global tcs
     integration_time = config['integration_time'][0]
     gain = config['gain'][0]
-    print('Setting TCS config: Integration time: %5d Gain: %5d' % (integration_time, gain))
+    pr('Setting TCS config: Integration time: %5d Gain: %5d' % (integration_time, gain))
     tcs = TCS34725.TCS34725(integration_time=integration_time,
                             gain=gain,
                             i2c=1)
@@ -425,9 +430,9 @@ def endprogram():
 
 def main():
     args = docopt(__doc__, version='LED Sensing')
-    print(args)
+    #prdbg(args)
     config = config_load(args['CONFIG'])
-    pprint.pprint(config)
+    #pprint.pprint(config)
     setup(config['sensor'])
 
     try:
@@ -452,7 +457,7 @@ def main():
         elif args['test_speed']:
             test_speed()
         else:
-            print('Not implemented')
+            pr('Not implemented')
 
     except KeyboardInterrupt:
         endprogram()

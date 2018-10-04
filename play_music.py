@@ -16,6 +16,7 @@ from docopt import docopt
 # Uncomment to remote debugledsens.py
 # import pydevd; pydevd.settrace('192.168.178.80')
 from config import DEF_STATION_GPIOS, DEF_STATION_GPIO_MAP, DEF_STATION_COLOR_MP3_MAP, DEF_PATH_MP3
+from helper import pr, prdbg
 
 exit_thread = False
 stop_playing = False
@@ -37,7 +38,7 @@ def get_station():
         gpios_in.append(GPIO.input(gpio))
 
     for gpios, station in DEF_STATION_GPIO_MAP:
-        print(gpios_in, gpios, station)
+        pr('Stations: %s %s %s' % (str(gpios_in), str(gpios), str(station)))
         if tuple(gpios_in) == gpios:
             return station
 
@@ -61,7 +62,6 @@ def check_mp3_files():
     for station, fn, color in DEF_STATION_COLOR_MP3_MAP:
         fn = convert_fn(fn)
         path = DEF_PATH_MP3 + fn
-        print(path)
         if not(os.path.isfile(path)):
             raise MP3FileError('File %s does not exist' % path)
         # TODO: look for a way to determine a valid mp3 file
@@ -74,13 +74,13 @@ def play(fn):
     pygame.mixer.music.play()
     while pygame.mixer.music.get_busy():
         if stop_playing or exit_thread:
-            print('Stopping to play')
+            pr('Stopping to play')
             pygame.mixer.music.stop()
             stop_playing = False
             return
         pygame.time.Clock().tick(10)
 
-    print('Finished playing')
+    pr('Finished playing')
 
 
 def setup():
@@ -106,22 +106,22 @@ def main():
             while start_playing == False:
                 time.sleep(0.1)
                 if exit_thread:
-                    print('Exit Thread')
+                    pr('Exit Thread')
                     endprogram()
                     return
             try:
-                print('Trying to find fn to play %s' % str(start_playing))
+                pr('Trying to find fn to play %s' % str(start_playing))
                 fn = get_mp3_filename(station, start_playing)
                 fn = DEF_PATH_MP3 + convert_fn(fn)
-                print('Playing %s' % fn)
+                pr('Playing %s' % fn)
                 play(fn)
                 if exit_thread == True:
-                    print('Exit Thread')
+                    pr('Exit Thread')
                     endprogram()
                     return
                 time.sleep(1)
             except UndefinedError as e:
-                print(e)
+                pr(e)
                 pass
             start_playing = False
 

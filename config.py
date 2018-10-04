@@ -1,3 +1,4 @@
+import logging
 import TCS34725
 import yaml
 
@@ -157,16 +158,16 @@ DEF_PATH_MP3 = './mp3/'
 
 
 def config_save_default():
-    print('Saving default config to %s' % DEF_CONFIG_FN)
+    pr('Saving default config to %s' % DEF_CONFIG_FN)
     with open(DEF_CONFIG_FN, 'w') as outfile:
         yaml.dump(DEF_CONFIG, outfile, indent=4)
 
 
 def config_load(fname):
     if fname is None:
-        print('No config file given. Using default')
+        pr('No config file given. Using default')
         return DEF_CONFIG
 
-    print('Trying to load config file: %s' % fname)
+        pr('Trying to load config file: %s' % fname)
     with open(fname, 'r') as infile:
         return yaml.load(infile)

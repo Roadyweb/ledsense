@@ -1,4 +1,6 @@
+
 import numpy
+import logging
 
 
 class draw_diagram(object):
@@ -87,3 +89,10 @@ def get_rgb_length(rgb):
     """ This function expects one tuples with RGB values and calculates the length of the vector.
     """
     return numpy.linalg.norm(rgb)
+
+
+def pr(str2log):
+    logging.info(str2log)
+
+def prdbg(str2log):
+    logging.debug(str2log)
