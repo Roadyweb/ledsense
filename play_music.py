@@ -17,8 +17,11 @@ from docopt import docopt
 # import pydevd; pydevd.settrace('192.168.178.80')
 from config import DEF_STATION_GPIOS, DEF_STATION_GPIO_MAP, DEF_STATION_COLOR_MP3_MAP, DEF_PATH_MP3
 
+exit_thread = False
+stop_playing = False
+start_playing = False
 
-class UndefinedStationError(Exception):
+class UndefinedError(Exception):
     def __init__(self, message):
         self.message = message
 
@@ -38,7 +41,7 @@ def get_station():
         if tuple(gpios_in) == gpios:
             return station
 
-    raise UndefinedStationError('Station %s not defined' % str(gpios_in))
+    raise UndefinedError('Station %s not defined' % str(gpios_in))
 
 
 def get_mp3_filename(cur_station, cur_color):
@@ -46,6 +49,7 @@ def get_mp3_filename(cur_station, cur_color):
         if cur_station == station and \
            cur_color == color:
             return fn
+    raise UndefinedError('Filename not defined for %s, %s' %(cur_station, cur_color) )
 
 
 def convert_fn(fn):
@@ -63,13 +67,20 @@ def check_mp3_files():
         # TODO: look for a way to determine a valid mp3 file
 
 def play(fn):
-    pygame.mixer.init()
+    global stop_playing
     pygame.init()
     pygame.mixer.init()
     pygame.mixer.music.load(fn)
     pygame.mixer.music.play()
     while pygame.mixer.music.get_busy():
+        if stop_playing or exit_thread:
+            print('Stopping to play')
+            pygame.mixer.music.stop()
+            stop_playing = False
+            return
         pygame.time.Clock().tick(10)
+
+    print('Finished playing')
 
 
 def setup():
@@ -84,19 +95,36 @@ def endprogram():
 
 
 def main():
+    global exit_thread
+    global stop_playing
+    global start_playing
     setup()
     check_mp3_files()
-
+    station = get_station()
     try:
         while 42:
-            station = get_station()
-            color = "RAL 1003 gelb"
-            fn = get_mp3_filename(station, color)
-            fn = DEF_PATH_MP3 + convert_fn(fn)
-            print('Playing %s' % fn)
-            play(fn)
+            while start_playing == False:
+                time.sleep(0.1)
+                if exit_thread:
+                    print('Exit Thread')
+                    endprogram()
+                    return
+            try:
+                print('Trying to find fn to play %s' % str(start_playing))
+                fn = get_mp3_filename(station, start_playing)
+                fn = DEF_PATH_MP3 + convert_fn(fn)
+                print('Playing %s' % fn)
+                play(fn)
+                if exit_thread == True:
+                    print('Exit Thread')
+                    endprogram()
+                    return
+                time.sleep(1)
+            except UndefinedError as e:
+                print(e)
+                pass
+            start_playing = False
 
-            time.sleep(1)
     except KeyboardInterrupt:
         endprogram()
 

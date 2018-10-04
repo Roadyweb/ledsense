@@ -5,6 +5,7 @@
 
 Usage:
   led_sens.py app [CONFIG]
+  led_sens.py app2 [CONFIG]
   led_sens.py color analyse [CONFIG]
   led_sens.py detect [CONFIG]
   led_sens.py diff
@@ -41,13 +42,20 @@ import numpy
 import pprint
 import sys
 import time
+import threading
+
+
 
 from docopt import docopt
 
 # Uncomment to remote debug
 # import pydevd; pydevd.settrace('192.168.178.80')
+import play_music
 from config import DEF_CONFIG, config_save_default, config_load
 from helper import draw_diagram, get_rgb_distance, get_rgb_length
+
+
+exit_thread = False
 
 GPIO_LED = 4
 
@@ -169,6 +177,33 @@ def app(config_det, config_rgb, config_color):
         print('%-30s - Distance: %5d - Cur. RGB: %-25s RGB %-20s' %
               (color[0], color[2], str(res), str(color[1])))
         detect_cube_removal(det_threshold)
+
+def app2(config_det, config_rgb, config_color):
+    global tcs
+    t = threading.Thread(target=play_music.main)
+    t.start()
+
+
+    det_threshold = config_det['threshold']
+    rgb_stable_cnt = config_rgb['stable_cnt']
+    rgb_stable_dist = config_rgb['stable_dist']
+    print('Starting app with thres: %5d, stable count: %5d, stable_dist: %5d' %
+          (det_threshold, rgb_stable_cnt, rgb_stable_dist))
+    try:
+        while 42:
+            detect_cube(det_threshold)
+            led_on()
+            res = get_stable_rgb(rgb_stable_cnt, rgb_stable_dist)
+            # print(res)
+            color = get_color(res, config_color)
+            play_music.start_playing = color[0]
+            print('%-30s - Distance: %5d - Cur. RGB: %-25s RGB %-20s' %
+                  (color[0], color[2], str(res), str(color[1])))
+            detect_cube_removal(det_threshold)
+            play_music.stop_playing = True
+    except KeyboardInterrupt:
+        play_music.exit_thread = True
+        t.join(3)
 
 
 def color_analyse(config_color):
@@ -398,6 +433,8 @@ def main():
     try:
         if args['app']:
             app(config['det'], config['rgb'], config['color'])
+        elif args['app2']:
+            app2(config['det'], config['rgb'], config['color'])
         elif args['color'] == True and args['analyse'] == True:
             color_analyse(config['color'])
         elif args['detect']:
