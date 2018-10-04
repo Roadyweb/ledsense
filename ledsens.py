@@ -113,6 +113,7 @@ def detect_cube(thres):
     while 42:
         r, g, b, c = measure()
         if c < thres:
+            prdbg('Cube detected: %d < %d' % (c, thres))
             return c
 
 
@@ -125,6 +126,7 @@ def detect_cube_removal(thres):
     while 42:
         r, g, b, c = measure()
         if c > thres:
+            prdbg('Cube removed: %d < %d' % (c, thres))
             return c
 
 
