@@ -15,23 +15,11 @@ Usage:
   led_sens.py rgb stable [CONFIG]
   led_sens.py test_speed
 
-  led_sens.py ship new <name>...
-  led_sens.py ship <name> move <x> <y> [--speed=<kn>]
-  led_sens.py ship shoot <x> <y>
-  led_sens.py mine (set|remove) <x> <y> [--moored | --drifting]
-  led_sens.py (-h | --help)
-  led_sens.py --version
-
 Options:
   -h --help     Show this screen.
   --version     Show version.
-  --speed=<kn>  Speed in knots [default: 10].
-  --moored      Moored (anchored) mine.
-  --drifting    Drifting mine.
 
 """
-
-from __future__ import print_function
 
 import RPi.GPIO as GPIO
 import TCS34725
@@ -44,7 +32,6 @@ import pprint
 import sys
 import time
 import threading
-
 
 
 from docopt import docopt
