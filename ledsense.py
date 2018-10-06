@@ -9,7 +9,7 @@ Usage:
   led_sens.py color analyse [CONFIG]
   led_sens.py detect [CONFIG]
   led_sens.py diff
-  led_sens.py meas (on|off|toggle)
+  led_sens.py meas (on|off|toggle) [CONFIG]
   led_sens.py play
   led_sens.py save_default
   led_sens.py rgb stable [CONFIG]
@@ -100,7 +100,7 @@ def detect_cube(thres):
     while 42:
         r, g, b, c = measure()
         if c < thres:
-            prdbg('Cube detected: %d < %d' % (c, thres))
+            prdbg('Cube detected: %4d < %4d' % (c, thres))
             return c
 
 
@@ -113,7 +113,7 @@ def detect_cube_removal(thres):
     while 42:
         r, g, b, c = measure()
         if c > thres:
-            prdbg('Cube removed: %d < %d' % (c, thres))
+            prdbg('Cube removed:  %4d > %4d' % (c, thres))
             return c
 
 
@@ -275,9 +275,7 @@ def detect(config):
     threshold = config['threshold']
     while 42:
         value = detect_cube(threshold)
-        pr('Cube detected           %5d - %5d' % (value, threshold))
         value = detect_cube_removal(threshold)
-        pr('Cube removal detected   %5d - %5d' % (value, threshold))
 
 
 def diff():
