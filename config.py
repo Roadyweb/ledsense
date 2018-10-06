@@ -2,6 +2,9 @@ import logging
 import TCS34725
 import yaml
 
+from helper import pr, prdbg
+
+
 DEF_CONFIG_FN = 'config_default.yaml'
 DEF_DESCRIPTION = 'DEFAULT DESCRIPTION'
 DEF_DET_THRESHOLD = 2
