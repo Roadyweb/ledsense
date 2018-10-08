@@ -21,7 +21,7 @@ color:
     - [22222, 22222, 22222]
 desc: "Configuration file für ersten Testaufbau mit Würfelhalter und schwarzen Schirmwürfel mittel"
 det: {threshold: 5}
-rgb: {stable_cnt: 10, stable_dist: 7}
+rgb: {stable_cnt: 10, stable_dist: 7, max_dist: 2000}
 sensor:
     gain: !!python/tuple [1]
     integration_time: !!python/tuple [235]

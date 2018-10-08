@@ -115,12 +115,9 @@ def detect_cube_removal(thres):
             return c
 
 
-def get_stable_rgb(count, dist_limit, max_rgb_dist):
+def get_stable_rgb(count, dist_limit):
     """ If a number of consecutive (count) RGB measurements is within a maximum
         distance (dist_limit) the average of all measurements is calculated and returned.
-        Returns:
-            int: distance between rgb vectors
-            None: if distance exceeds max_rgb_dist
     """
     while 42:
         res = []
@@ -136,15 +133,13 @@ def get_stable_rgb(count, dist_limit, max_rgb_dist):
             continue
         break
     median = list(numpy.median(res, axis=0))
-    if median > max_rgb_dist:
-        prdbg('Max RGB Dist: %d Dist Limit: %d Exiting... ' % (max_rgb_dist, median))
-        return None
     return median
 
 
-def get_color(rgb, colors):
+def get_color(rgb, colors, max_rgb_dist):
     """ Takes an RGB list as argument and matches against DEF_COLORS the closest
-        will be uses as match
+        will be uses as match. Returns None if match distance is larger than
+        max_rgb_distance.
     """
     min_dist = 999999999
     match = 0
@@ -155,6 +150,13 @@ def get_color(rgb, colors):
         if dist < min_dist:
             min_dist = dist
             match = color
+
+    pr('%-15s - Distance: %5d - Cur. RGB: %-25s RGB %-20s' %
+       (match[0], min_dist, str(rgb), str(match[1])))
+
+    if min_dist > max_rgb_dist:
+        prdbg('Max RGB color dist: %d Dist Limit: %d Exiting... ' % (min_dist, max_rgb_dist))
+        return None
     return match[0], match[1], min_dist
 
 
@@ -193,13 +195,14 @@ def app2(config_det, config_rgb, config_color):
         while 42:
             detect_cube(det_threshold)
             led_on()
-            res = get_stable_rgb(rgb_stable_cnt, rgb_max_dist)
+            res = get_stable_rgb(rgb_stable_cnt, rgb_stable_dist)
             # print(res)
-            color = get_color(res, config_color)
-            play_music.stop_playing = False
-            play_music.start_playing = color[0]
-            pr('%-15s - Distance: %5d - Cur. RGB: %-25s RGB %-20s' %
-                  (color[0], color[2], str(res), str(color[1])))
+            color = get_color(res, config_color, rgb_max_dist)
+            if color != None:
+                play_music.stop_playing = False
+                play_music.start_playing = color[0]
+            else:
+                pr('Max RGB color distance exceeded. Not playing...')
             detect_cube_removal(det_threshold)
             play_music.stop_playing = True
     except KeyboardInterrupt:

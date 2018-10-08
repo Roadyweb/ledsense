@@ -61,7 +61,7 @@ color:
     - [1351.0, 1440.0, 1592.0]
 desc: DEFAULT DESCRIPTION
 det: {threshold: 2}
-rgb: {stable_cnt: 5, stable_dist: 10}
+rgb: {stable_cnt: 5, stable_dist: 10, max_dist: 2000}
 sensor:
     gain: !!python/tuple [2]
     integration_time: !!python/tuple [235]
