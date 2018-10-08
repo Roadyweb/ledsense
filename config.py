@@ -10,6 +10,8 @@ DEF_DESCRIPTION = 'DEFAULT DESCRIPTION'
 DEF_DET_THRESHOLD = 2
 DEF_RGB_STABLE_CNT = 5
 DEF_RGB_STABLE_DIST = 10
+DEF_RGB_MAX_DIST = 200
+
 DEF_COLORS = [
     # Gelbtöne
     ['RAL 1000 - Grünbeige', [4080.0, 3300.0, 2328.0]],
@@ -51,7 +53,8 @@ DEF_CONFIG = {
     'det': {'threshold': DEF_DET_THRESHOLD},
     'rgb': {
         'stable_cnt': DEF_RGB_STABLE_CNT,
-        'stable_dist': DEF_RGB_STABLE_DIST
+        'stable_dist': DEF_RGB_STABLE_DIST,
+        'max_dist': DEF_RGB_MAX_DIST
     },
     'color': DEF_COLORS,
     'sensor': {

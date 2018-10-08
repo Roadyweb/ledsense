@@ -43,8 +43,6 @@ from config import DEF_CONFIG, config_save_default, config_load
 from helper import draw_diagram, get_rgb_distance, get_rgb_length, pr, prdbg
 
 
-exit_thread = False
-
 GPIO_LED = 4
 
 tcs = None
@@ -117,9 +115,12 @@ def detect_cube_removal(thres):
             return c
 
 
-def get_stable_rgb(count, dist_limit):
+def get_stable_rgb(count, dist_limit, max_rgb_dist):
     """ If a number of consecutive (count) RGB measurements is within a maximum
         distance (dist_limit) the average of all measurements is calculated and returned.
+        Returns:
+            int: distance between rgb vectors
+            None: if distance exceeds max_rgb_dist
     """
     while 42:
         res = []
@@ -135,6 +136,9 @@ def get_stable_rgb(count, dist_limit):
             continue
         break
     median = list(numpy.median(res, axis=0))
+    if median > max_rgb_dist:
+        prdbg('Max RGB Dist: %d Dist Limit: %d Exiting... ' % (max_rgb_dist, median))
+        return None
     return median
 
 
@@ -180,13 +184,16 @@ def app2(config_det, config_rgb, config_color):
     det_threshold = config_det['threshold']
     rgb_stable_cnt = config_rgb['stable_cnt']
     rgb_stable_dist = config_rgb['stable_dist']
+    rgb_max_dist = config_rgb['max_dist']
     pr('Starting app with thres: %5d, stable count: %5d, stable_dist: %5d' %
           (det_threshold, rgb_stable_cnt, rgb_stable_dist))
+    pr('    using max distance: %5d' %
+          (rgb_max_dist))
     try:
         while 42:
             detect_cube(det_threshold)
             led_on()
-            res = get_stable_rgb(rgb_stable_cnt, rgb_stable_dist)
+            res = get_stable_rgb(rgb_stable_cnt, rgb_max_dist)
             # print(res)
             color = get_color(res, config_color)
             play_music.stop_playing = False
