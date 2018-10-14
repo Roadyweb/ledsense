@@ -68,9 +68,9 @@ def check_mp3_files():
 
 def play(fn):
     global stop_playing
-    pygame.init()
-    pygame.mixer.init()
     pygame.mixer.music.load(fn)
+    pygame.mixer.music.set_volume(1)    # Set to max
+    pr('Playing %s with volume %d' % (fn, 100 * pygame.mixer.music.get_volume()))
     pygame.mixer.music.play()
     while pygame.mixer.music.get_busy():
         if stop_playing or exit_thread:
@@ -88,6 +88,8 @@ def setup():
     GPIO.setmode(GPIO.BCM)
     for gpio in DEF_STATION_GPIOS:
         GPIO.setup(gpio, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    pygame.init()
+    pygame.mixer.init()
 
 
 def endprogram():
@@ -113,7 +115,6 @@ def main():
                 pr('Trying to find fn to play %s' % str(start_playing))
                 fn = get_mp3_filename(station, start_playing)
                 fn = DEF_PATH_MP3 + convert_fn(fn)
-                pr('Playing %s' % fn)
                 play(fn)
                 if exit_thread == True:
                     pr('Exit Thread')
