@@ -2,21 +2,19 @@
 # -*- coding: utf-8 -*-
 
 
-from __future__ import print_function
-
-import RPi.GPIO as GPIO
-import os.path
-import pprint
-import pygame
-import sys
 import time
 
-from docopt import docopt
+import alsaaudio
+import RPi.GPIO as GPIO
+import os.path
+import pygame
 
-# Uncomment to remote debugledsens.py
-# import pydevd; pydevd.settrace('192.168.178.80')
+
 from config import DEF_STATION_GPIOS, DEF_STATION_GPIO_MAP, DEF_STATION_COLOR_MP3_MAP, DEF_PATH_MP3
 from helper import pr, prdbg
+
+
+DEF_AUDIO_DEVICE = 'PCM'
 
 exit_thread = False
 stop_playing = False
@@ -90,6 +88,11 @@ def setup():
         GPIO.setup(gpio, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     pygame.init()
     pygame.mixer.init()
+    m = alsaaudio.Mixer(DEF_AUDIO_DEVICE)
+    vol_before = m.getvolume()[0]
+    m.setvolume(100)
+    vol_after = m.getvolume()[0]
+    pr('Setting Alsa volume for %s to %d (was: %d)' % (DEF_AUDIO_DEVICE, vol_after, vol_before))
 
 
 def endprogram():
