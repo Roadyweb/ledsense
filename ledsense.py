@@ -40,7 +40,7 @@ from docopt import docopt
 # import pydevd; pydevd.settrace('192.168.178.80')
 import play_music
 from config import DEF_CONFIG, config_save_default, config_load
-from helper import draw_diagram, get_rgb_distance, get_rgb_length, pr, prdbg
+from helper import draw_diagram, get_rgb_distance, get_rgb_length, pr, prdbg, prerr
 
 
 GPIO_LED = 4
@@ -180,7 +180,7 @@ def app(config_det, config_rgb, config_color):
 
 def app2(config_det, config_rgb, config_color):
     global tcs
-    t = threading.Thread(target=play_music.main)
+    t = threading.Thread(target=play_music.main, name='play_music.main')
     t.start()
 
     det_threshold = config_det['threshold']
@@ -196,9 +196,11 @@ def app2(config_det, config_rgb, config_color):
             detect_cube(det_threshold)
             led_on()
             res = get_stable_rgb(rgb_stable_cnt, rgb_stable_dist)
-            # print(res)
             color = get_color(res, config_color, rgb_max_dist)
-            if color != None:
+            if not t.is_alive():
+                prerr('Thread %s unexpectedly died. Exiting...' % t.getName())
+                return
+            if color is not None:
                 play_music.stop_playing = False
                 play_music.start_playing = color[0]
             else:

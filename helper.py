@@ -94,5 +94,10 @@ def get_rgb_length(rgb):
 def pr(str2log):
     logging.info(str2log)
 
+
 def prdbg(str2log):
     logging.debug(str2log)
+
+
+def prerr(str2log):
+    logging.error(str2log)
