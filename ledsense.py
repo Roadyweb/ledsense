@@ -116,6 +116,10 @@ def get_stable_rgb(count, dist_limit):
     """ If a number of consecutive (count) RGB measurements is within a maximum
         distance (dist_limit) the average of all measurements is calculated and returned.
     """
+    if count < 2:
+        raise ValueError('Count has to be larger than 2, is %d' % count)
+    # correct for loops starting with base 0
+    count -= 1
     while 42:
         res = []
         max_dist = 0
@@ -184,10 +188,8 @@ def app2(config_det, config_rgb, config_color):
     rgb_stable_cnt = config_rgb['stable_cnt']
     rgb_stable_dist = config_rgb['stable_dist']
     rgb_max_dist = config_rgb['max_dist']
-    pr('Starting app with thres: %5d, stable count: %5d, stable_dist: %5d' %
-       (det_threshold, rgb_stable_cnt, rgb_stable_dist))
-    pr('    using max distance: %5d' %
-       (rgb_max_dist))
+    pr('Starting app with thres: %5d, stable count: %5d, stable_dist: %5d using max distance: %5d' %
+       (det_threshold, rgb_stable_cnt, rgb_stable_dist, rgb_max_dist))
     try:
         while 42:
             detect_cube(det_threshold)
