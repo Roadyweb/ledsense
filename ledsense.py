@@ -33,7 +33,6 @@ import sys
 import time
 import threading
 
-
 from docopt import docopt
 
 # Uncomment to remote debug
@@ -42,7 +41,6 @@ import play_music
 from config import DEF_CONFIG, config_save_default, config_load
 from helper import draw_diagram, get_rgb_distance, get_rgb_length, pr, prdbg, prerr
 
-
 GPIO_LED = 4
 
 tcs = None
@@ -50,7 +48,6 @@ tcs = None
 # Should be probably left this value. Because it add 10% mmargin to the determined threshold
 # 0.053 s = Threshold
 LED_TOGGLE_HOLDOFF = 0.060
-
 
 # LED_TOGGLE_HOLDOFF = 0.053
 
@@ -166,7 +163,7 @@ def app(config_det, config_rgb, config_color):
     rgb_stable_cnt = config_rgb['stable_cnt']
     rgb_stable_dist = config_rgb['stable_dist']
     pr('Starting app with thres: %5d, stable count: %5d, stable_dist: %5d' %
-          (det_threshold, rgb_stable_cnt, rgb_stable_dist))
+       (det_threshold, rgb_stable_cnt, rgb_stable_dist))
     while 42:
         detect_cube(det_threshold)
         led_on()
@@ -174,7 +171,7 @@ def app(config_det, config_rgb, config_color):
         # print(res)
         color = get_color(res, config_color)
         pr('%-15s - Distance: %5d - Cur. RGB: %-25s RGB %-20s' %
-              (color[0], color[2], str(res), str(color[1])))
+           (color[0], color[2], str(res), str(color[1])))
         detect_cube_removal(det_threshold)
 
 
@@ -188,9 +185,9 @@ def app2(config_det, config_rgb, config_color):
     rgb_stable_dist = config_rgb['stable_dist']
     rgb_max_dist = config_rgb['max_dist']
     pr('Starting app with thres: %5d, stable count: %5d, stable_dist: %5d' %
-          (det_threshold, rgb_stable_cnt, rgb_stable_dist))
+       (det_threshold, rgb_stable_cnt, rgb_stable_dist))
     pr('    using max distance: %5d' %
-          (rgb_max_dist))
+       (rgb_max_dist))
     try:
         while 42:
             detect_cube(det_threshold)
@@ -251,8 +248,8 @@ def color_analyse(config_color):
         sorted_res = sorted(res, key=getKey)
         # pprint.pprint(sorted_res)
         for entry in sorted_res[:10]:
-            #print(entry)
-            #return
+            # print(entry)
+            # return
             dist = entry[0]
             name1 = entry[1][0]
             rgb1 = entry[1][1]
@@ -307,7 +304,7 @@ def diff():
         rgb_diff = get_rgb_distance(rgb, rgb2)
         clear_diff = abs(c - c2)
         pr('Len %5d %5d %5d Clear: %5d %5d %5d' %
-              (rgb_len, rgb2_len, rgb_diff, c, c2, clear_diff))
+           (rgb_len, rgb2_len, rgb_diff, c, c2, clear_diff))
 
 
 def meas(conf_led_on, toggle):
@@ -322,14 +319,14 @@ def meas(conf_led_on, toggle):
                 r, g, b, c = measure()
                 dd.add(r)
                 pr('R: %5d G: %5d B: %5d C: %5d | %-40s' %
-                      (r, g, b, c, dd.getstr()))
+                   (r, g, b, c, dd.getstr()))
 
             led_off()
             for _ in range(3):
                 r, g, b, c = measure()
                 dd.add(r)
                 pr('R: %5d G: %5d B: %5d C: %5d | %-40s' %
-                      (r, g, b, c, dd.getstr()))
+                   (r, g, b, c, dd.getstr()))
 
     led(conf_led_on)
 
@@ -346,7 +343,7 @@ def rgb_stable(config_rgb):
     rgb_stable_cnt = config_rgb['stable_cnt']
     rgb_stable_dist = config_rgb['stable_dist']
     pr('Starting rgb_stable with stable count: %5d, stable_dist: %5d' %
-          (rgb_stable_cnt, rgb_stable_dist))
+       (rgb_stable_cnt, rgb_stable_dist))
     led_on()
 
     while 42:
@@ -429,9 +426,9 @@ def endprogram():
 
 def main():
     args = docopt(__doc__, version='LED Sensing')
-    #prdbg(args)
+    # prdbg(args)
     config = config_load(args['CONFIG'])
-    #pprint.pprint(config)
+    # pprint.pprint(config)
     setup(config['sensor'])
 
     try:

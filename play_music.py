@@ -9,16 +9,15 @@ import RPi.GPIO as GPIO
 import os.path
 import pygame
 
-
 from config import DEF_STATION_GPIOS, DEF_STATION_GPIO_MAP, DEF_STATION_COLOR_MP3_MAP, DEF_PATH_MP3
 from helper import pr, prdbg
-
 
 DEF_AUDIO_DEVICE = 'PCM'
 
 exit_thread = False
 stop_playing = False
 start_playing = False
+
 
 class UndefinedError(Exception):
     def __init__(self, message):
@@ -46,9 +45,9 @@ def get_station():
 def get_mp3_filename(cur_station, cur_color):
     for station, fn, color in DEF_STATION_COLOR_MP3_MAP:
         if cur_station == station and \
-           cur_color == color:
+                cur_color == color:
             return fn
-    raise UndefinedError('Filename not defined for %s, %s' %(cur_station, cur_color) )
+    raise UndefinedError('Filename not defined for %s, %s' % (cur_station, cur_color))
 
 
 def convert_fn(fn):
@@ -60,14 +59,15 @@ def check_mp3_files():
     for station, fn, color in DEF_STATION_COLOR_MP3_MAP:
         fn = convert_fn(fn)
         path = DEF_PATH_MP3 + fn
-        if not(os.path.isfile(path)):
+        if not (os.path.isfile(path)):
             raise MP3FileError('File %s does not exist' % path)
         # TODO: look for a way to determine a valid mp3 file
+
 
 def play(fn):
     global stop_playing
     pygame.mixer.music.load(fn)
-    pygame.mixer.music.set_volume(1)    # Set to max
+    pygame.mixer.music.set_volume(1)  # Set to max
     pr('Playing %s with volume %d' % (fn, 100 * pygame.mixer.music.get_volume()))
     pygame.mixer.music.play()
     while pygame.mixer.music.get_busy():
@@ -134,8 +134,8 @@ def main():
 
 
 if __name__ == '__main__':
-    import cProfile
-    import pstats
+    # import cProfile
+    # import pstats
 
     # cProfile.run('main()', 'restats')
     # p = pstats.Stats('restats')

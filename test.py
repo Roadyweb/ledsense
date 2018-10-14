@@ -1,6 +1,6 @@
 import unittest
 
-import ledsens
+import ledsense
 import TCS34725
 
 #########################################################
@@ -33,7 +33,7 @@ class TestCaseGetRgbStable(unittest.TestCase):
     def setUp(self):
         self.rgb = CreateRGBMeasurement()
         # Dummy setup for TCS
-        ledsens.tcs = tcs = TCS34725.TCS34725(integration_time=0, gain=0,
+        ledsense.tcs = tcs = TCS34725.TCS34725(integration_time=0, gain=0,
                             i2c=1)
 
     def test_same_input(self):
@@ -43,10 +43,9 @@ class TestCaseGetRgbStable(unittest.TestCase):
         for i in range(0, 255, 10):
             for cnt in range(0, CNT, 2):
                 self.rgb.set_value(i)
-                ledsens.tcs.get_raw_data = self.rgb.get_value
+                ledsense.tcs.get_raw_data = self.rgb.get_value
 
-                ret = ledsens.get_stable_rgb(CNT, MAX_DIST)
-                f
+                ret = ledsense.get_stable_rgb(CNT, MAX_DIST)
                 self.assertEqual(ret, [i, i, i],
                                  'Returned RGB must match input RGB')
 
@@ -56,9 +55,9 @@ class TestCaseGetRgbStable(unittest.TestCase):
 
         for i in range(0, 255, 10):
             self.rgb.set_value(i, 1)
-            ledsens.tcs.get_raw_data = self.rgb.get_value
+            ledsense.tcs.get_raw_data = self.rgb.get_value
 
-            ret = ledsens.get_stable_rgb(CNT, MAX_DIST)
+            ret = ledsense.get_stable_rgb(CNT, MAX_DIST)
             print(ret)
             self.assertEqual(ret, [i, i, i],
                              'Returned RGB must match input RGB')
