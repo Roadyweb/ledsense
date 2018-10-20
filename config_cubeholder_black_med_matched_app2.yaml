@@ -1,16 +1,16 @@
 color:
 -   - "RAL 5019 capriblau"
-    - [3039.0, 3570.0, 3650.0]
+    - [3039, 3570, 3650]
 -   - "RAL 5024 pastelblau"
-    - [3049.0, 3580.0, 3656.0]
+    - [3049, 3580, 3656]
 -   - "RAL 1003 gelb"
-    - [5877.0, 4771.0, 3147.0]
+    - [5877, 4771, 3147]
 -   - "RAL 1001 beige"
-    - [5129.0, 3434.0, 2719.0]
+    - [5129, 3434, 2719]
 -   - "RAL 3013 tomatenrot"
-    - [6037.0, 5466.0, 4849.0]
+    - [6037, 5466, 4849]
 -   - "RAL 3022 lachsrot"
-    - [4623.0, 2855.0, 2770.0]
+    - [4623, 2855, 2770]
 desc: "Configuration file für ersten Testaufbau mit Würfelhalter und schwarzen Schirmwürfel mittel"
 det: {threshold: 5}
 # max_dist: max distance between rgb colors.

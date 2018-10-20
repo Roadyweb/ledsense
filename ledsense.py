@@ -133,7 +133,8 @@ def get_stable_rgb(count, dist_limit):
             prdbg('Max Dist: %d Dist Limit: %d Restarting... ' % (max_dist, dist_limit))
             continue
         break
-    median = list(numpy.median(res, axis=0))
+    # Calc average and convert to int, for better readability. Precision is not needed
+    median = list(numpy.median(res, axis=0).astype(int))
     return median
 
 
