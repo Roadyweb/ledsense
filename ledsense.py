@@ -185,7 +185,7 @@ def app2(config_det, config_rgb, config_color, map_station_mp3_color):
 
     check_config_app2(config_color, map_station_mp3_color)
 
-    t = threading.Thread(target=play_music.main, name='play_music.main')
+    t = threading.Thread(target=play_music.main, name='play_music.main', args=(map_station_mp3_color,))
     t.start()
 
     det_threshold = config_det['threshold']
@@ -229,8 +229,8 @@ def check_config_app2(config_color, config_map_color_mp3):
                 found += 1
         if found == 0:
             prwarn('Color %s not found' % (str(color_name)))
-            return
-        pr('Found color %30s for station: %s' % (str(color_name), str(stations)))
+        else:
+            pr('Found color %30s for station: %s' % (str(color_name), str(stations)))
 
     # Check map_color_mp3 vs. config colors
     pr('Check map_color_mp3 vs. config colors')

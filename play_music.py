@@ -42,8 +42,8 @@ def get_station():
     raise UndefinedError('Station %s not defined' % str(gpios_in))
 
 
-def get_mp3_filename(cur_station, cur_color):
-    for station, fn, color in DEF_STATION_COLOR_MP3_MAP:
+def get_mp3_filename(map_station_mp3_color, cur_station, cur_color):
+    for station, fn, color in map_station_mp3_color:
         if cur_station == station and \
                 cur_color == color:
             return fn
@@ -54,9 +54,9 @@ def convert_fn(fn):
     return fn.split('_')[0] + '.mp3'
 
 
-def check_mp3_files():
+def check_mp3_files(map_station_mp3_color):
     # pygame.mixer.init()
-    for station, fn, color in DEF_STATION_COLOR_MP3_MAP:
+    for station, fn, color in map_station_mp3_color:
         fn = convert_fn(fn)
         path = DEF_PATH_MP3 + fn
         if not (os.path.isfile(path)):
@@ -99,12 +99,13 @@ def endprogram():
     GPIO.cleanup()
 
 
-def main():
+def main(map_station_mp3_color):
     global exit_thread
     global stop_playing
     global start_playing
+    print(map_station_mp3_color)
     setup()
-    check_mp3_files()
+    check_mp3_files(map_station_mp3_color)
     station = get_station()
     try:
         while 42:
@@ -116,7 +117,7 @@ def main():
                     return
             try:
                 pr('Trying to find fn to play %s' % str(start_playing))
-                fn = get_mp3_filename(station, start_playing)
+                fn = get_mp3_filename(map_station_mp3_color, station, start_playing)
                 fn = DEF_PATH_MP3 + convert_fn(fn)
                 play(fn)
                 if exit_thread == True:
