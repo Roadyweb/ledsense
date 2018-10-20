@@ -38,8 +38,8 @@ from docopt import docopt
 # Uncomment to remote debug
 # import pydevd; pydevd.settrace('192.168.178.80')
 import play_music
-from config import DEF_CONFIG, config_save_default, config_load
-from helper import draw_diagram, get_rgb_distance, get_rgb_length, pr, prdbg, prerr
+from config import DEF_CONFIG, DEF_STATION_COLOR_MP3_MAP, config_save_default, config_load
+from helper import draw_diagram, get_rgb_distance, get_rgb_length, pr, prdbg, prerr, prwarn
 
 GPIO_LED = 4
 
@@ -181,6 +181,9 @@ def app(config_det, config_rgb, config_color):
 
 def app2(config_det, config_rgb, config_color):
     global tcs
+
+    check_config_app2(config_color, DEF_STATION_COLOR_MP3_MAP)
+
     t = threading.Thread(target=play_music.main, name='play_music.main')
     t.start()
 
@@ -209,6 +212,49 @@ def app2(config_det, config_rgb, config_color):
     except KeyboardInterrupt:
         play_music.exit_thread = True
         t.join(3)
+
+
+def check_config_app2(config_color, config_map_color_mp3):
+    # Check config colors vs. map_color_mp3
+    pr('Check config colors vs. map_color_mp3')
+    for color_name, color_rgb in config_color:
+        stations = []
+        found = 0
+        for station, mp3_fn, map_color_name in config_map_color_mp3:
+            # prdbg('Color %s, Map: %s' % (str(color_name), str(map_color_name)))
+            if color_name == map_color_name:
+                # prdbg('Found color %s in map: %s for station %d' % (str(color_name), str(map_color_name), station))
+                stations.append(station)
+                found += 1
+        if found == 0:
+            prwarn('Color %s not found' % (str(color_name)))
+            return
+        pr('Found color %30s for station: %s' % (str(color_name), str(stations)))
+
+    # Check map_color_mp3 vs. config colors
+    pr('Check map_color_mp3 vs. config colors')
+    # Get all available stations
+    stations = []
+    for station, mp3_fn, map_color_name in config_map_color_mp3:
+        if station not in stations:
+            stations.append(station)
+    pr('Stations: %s' % str(stations))
+
+    for station in stations:
+        config_map_color_mp3_part = []
+        # Extract config for a single station
+        for map_station, mp3_fn, map_color_name in config_map_color_mp3:
+            if map_station == station:
+                config_map_color_mp3_part.append(map_color_name)
+        for map_color_name in config_map_color_mp3_part:
+            found = 0
+            for color_name, color_rgb in config_color:
+                # prdbg('Color %s, Map: %s' % (str(color_name), str(map_color_name)))
+                if color_name == map_color_name:
+                    # prdbg('Found color %s in map: %s for station %d' % (str(color_name), str(map_color_name), map_station))
+                    found += 1
+            if found == 0:
+                prwarn('Color %30s not found for station: %d' % (str(map_color_name), station))
 
 
 def color_analyse(config_color):

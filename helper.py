@@ -99,5 +99,8 @@ def prdbg(str2log):
     logging.debug(str2log)
 
 
+def prwarn(str2log):
+    logging.warn(str2log)
+
 def prerr(str2log):
     logging.error(str2log)
