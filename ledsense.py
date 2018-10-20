@@ -272,9 +272,10 @@ def color_analyse(config_color):
 
     cs_map = (
         ('RGB', dummy),
-        ('YIQ', colorsys.rgb_to_yiq),
-        ('HLS', colorsys.rgb_to_hls),
-        ('YIQ', colorsys.rgb_to_hsv)
+        # Pretty useless since differences in all colorspaces are the same
+        # ('YIQ', colorsys.rgb_to_yiq),
+        # ('HLS', colorsys.rgb_to_hls),
+        # ('YIQ', colorsys.rgb_to_hsv)
     )
     for cs_name, cs_func in cs_map:
         res = []
@@ -304,8 +305,8 @@ def color_analyse(config_color):
             rgb1 = entry[1][1]
             name2 = entry[2][0]
             rgb2 = entry[2][1]
-            rgb1_str = '(%8.3f %8.3f %8.3f)' % rgb1
-            rgb2_str = '(%8.3f %8.3f %8.3f)' % rgb2
+            rgb1_str = '(%5d %5d %5d)' % rgb1
+            rgb2_str = '(%5d %5d %5d)' % rgb2
             print('%s: Dist: %4d (%-25s %-25s) : %s %s' %
                   (cs_name, dist, name1, name2, rgb1_str, rgb2_str))
 

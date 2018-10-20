@@ -103,7 +103,6 @@ def main(map_station_mp3_color):
     global exit_thread
     global stop_playing
     global start_playing
-    print(map_station_mp3_color)
     setup()
     check_mp3_files(map_station_mp3_color)
     station = get_station()
