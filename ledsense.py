@@ -179,10 +179,10 @@ def app(config_det, config_rgb, config_color):
         detect_cube_removal(det_threshold)
 
 
-def app2(config_det, config_rgb, config_color):
+def app2(config_det, config_rgb, config_color, map_station_mp3_color):
     global tcs
 
-    check_config_app2(config_color, DEF_STATION_COLOR_MP3_MAP)
+    check_config_app2(config_color, map_station_mp3_color)
 
     t = threading.Thread(target=play_music.main, name='play_music.main')
     t.start()
@@ -483,7 +483,7 @@ def main():
         if args['app']:
             app(config['det'], config['rgb'], config['color'])
         elif args['app2']:
-            app2(config['det'], config['rgb'], config['color'])
+            app2(config['det'], config['rgb'], config['color'], config['map_station_mp3_color'])
         elif args['color'] == True and args['analyse'] == True:
             color_analyse(config['color'])
         elif args['detect']:
