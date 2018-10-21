@@ -1,9 +1,12 @@
 import logging
+import os.path
+
 import TCS34725
 import yaml
 
-from helper import pr, prdbg
+import RPi.GPIO as GPIO
 
+from helper import pr, prdbg, prwarn
 
 DEF_CONFIG_FN = 'config_default.yaml'
 DEF_DESCRIPTION = 'DEFAULT DESCRIPTION'
@@ -181,3 +184,90 @@ def config_load(fname):
     pr('Trying to load config file: %s' % fname)
     with open(fname, 'r') as infile:
         return yaml.load(infile)
+
+
+def check_config_app2(config_color, config_map_color_mp3):
+    # Check config colors vs. map_color_mp3
+    pr('Check config colors vs. map_color_mp3')
+    for color_name, color_rgb in config_color:
+        stations = []
+        found = 0
+        for station, mp3_fn, map_color_name in config_map_color_mp3:
+            # prdbg('Color %s, Map: %s' % (str(color_name), str(map_color_name)))
+            if color_name == map_color_name:
+                # prdbg('Found color %s in map: %s for station %d' % (str(color_name), str(map_color_name), station))
+                stations.append(station)
+                found += 1
+        if found == 0:
+            prwarn('Color %s not found' % (str(color_name)))
+        else:
+            pr('Found color %30s for station: %s' % (str(color_name), str(stations)))
+
+    # Check map_color_mp3 vs. config colors
+    pr('Check map_color_mp3 vs. config colors')
+    # Get all available stations
+    stations = []
+    for station, mp3_fn, map_color_name in config_map_color_mp3:
+        if station not in stations:
+            stations.append(station)
+    # pr('Stations: %s' % str(stations))
+
+    for station in stations:
+        config_map_color_mp3_part = []
+        # Extract config for a single station
+        for map_station, mp3_fn, map_color_name in config_map_color_mp3:
+            if map_station == station:
+                config_map_color_mp3_part.append(map_color_name)
+        for map_color_name in config_map_color_mp3_part:
+            found = 0
+            for color_name, color_rgb in config_color:
+                # prdbg('Color %s, Map: %s' % (str(color_name), str(map_color_name)))
+                if color_name == map_color_name:
+                    # prdbg('Found color %s in map: %s for station %d' %
+                    #       (str(color_name), str(map_color_name), map_station))
+                    found += 1
+            if found == 0:
+                prwarn('Color %30s not found for station: %d' % (str(map_color_name), station))
+
+
+class MP3FileError(Exception):
+    def __init__(self, message):
+        self.message = message
+
+
+def convert_fn(fn):
+    return fn.split('_')[0] + '.mp3'
+
+
+def check_mp3_files(map_station_mp3_color):
+    # pygame.mixer.init()
+    for station, fn, color in map_station_mp3_color:
+        fn = convert_fn(fn)
+        path = DEF_PATH_MP3 + fn
+        if not (os.path.isfile(path)):
+            raise MP3FileError('File %s does not exist' % path)
+        # TODO: look for a way to determine a valid mp3 file
+
+
+class UndefinedStation(Exception):
+    def __init__(self, message):
+        self.message = message
+
+
+def get_station():
+    GPIO.setwarnings(False)
+    GPIO.setmode(GPIO.BCM)
+    for gpio in DEF_STATION_GPIOS:
+        GPIO.setup(gpio, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+    gpios_in = []
+    for gpio in DEF_STATION_GPIOS:
+        gpios_in.append(GPIO.input(gpio))
+
+    for gpios, station in DEF_STATION_GPIO_MAP:
+        prdbg('Trying to match stations: %s %s %s' % (str(gpios_in), str(gpios), str(station)))
+        if tuple(gpios_in) == gpios:
+            pr('Found station: %d' % station)
+            return station
+
+    raise UndefinedStation('For GPIOs %s no station defined' % str(gpios_in))

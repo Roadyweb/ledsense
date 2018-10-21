@@ -24,7 +24,7 @@ color:
 -   - "RAL weiss"
     - [5886, 5369, 4787]
 desc: "Configuration file für erste Kalibrierung mit echten Museumswürfeln"
-det: {threshold: 5}
+det: {threshold: 10}
 # max_dist: max distance between rgb colors.
 rgb: {stable_cnt: 10, stable_dist: 7, max_dist: 800}
 sensor:
