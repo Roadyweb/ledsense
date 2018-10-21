@@ -136,8 +136,7 @@ def get_stable_rgb(count, dist_limit):
     """
     if count < 2:
         raise ValueError('Count has to be larger than 2, is %d' % count)
-    # correct for loops starting with base 0
-    count -= 1
+
     while 42:
         res = []
         max_dist = 0
