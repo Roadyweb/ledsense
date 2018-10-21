@@ -103,6 +103,7 @@ def main(map_station_mp3_color):
     global exit_thread
     global stop_playing
     global start_playing
+    pr('play_music.main: Starting thread')
     setup()
     check_mp3_files(map_station_mp3_color)
     station = get_station()
@@ -111,7 +112,7 @@ def main(map_station_mp3_color):
             while start_playing == False:
                 time.sleep(0.1)
                 if exit_thread:
-                    pr('Exit Thread')
+                    pr('play_music.main: Exit thread')
                     endprogram()
                     return
             try:
@@ -120,7 +121,7 @@ def main(map_station_mp3_color):
                 fn = DEF_PATH_MP3 + convert_fn(fn)
                 play(fn)
                 if exit_thread == True:
-                    pr('Exit Thread')
+                    pr('play_music.main: Exit thread')
                     endprogram()
                     return
                 time.sleep(1)

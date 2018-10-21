@@ -24,12 +24,9 @@ Options:
 import RPi.GPIO as GPIO
 import TCS34725
 import copy
-import colorsys
 import datetime
 import logging
 import numpy
-import pprint
-import sys
 import time
 import threading
 
@@ -38,25 +35,47 @@ from docopt import docopt
 # Uncomment to remote debug
 # import pydevd; pydevd.settrace('192.168.178.80')
 import play_music
-from config import DEF_CONFIG, DEF_STATION_COLOR_MP3_MAP, config_save_default, config_load
+from config import config_save_default, config_load
 from helper import draw_diagram, get_rgb_distance, get_rgb_length, pr, prdbg, prerr, prwarn
 
 GPIO_LED = 4
 
 tcs = None
 
-# Should be probably left this value. Because it add 10% mmargin to the determined threshold
+# Should be probably left this value. Because it add 10% margin to the determined threshold
 # 0.053 s = Threshold
 LED_TOGGLE_HOLDOFF = 0.060
 
 # LED_TOGGLE_HOLDOFF = 0.053
 
-
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', datefmt='%Y.%m.%d %H:%M:%S', level=logging.DEBUG)
 
 
+LOG_RGB_INT = 5    # seconds
+log_rgb_exit = False
+last_rgb_measurement = [-1, -1, -1, -1]
+
+
+def log_rgb():
+    global log_rgb_exit
+    log_rgb_exit = False
+    pr('log_rgb: Starting thread')
+    while 42:
+        pr('RGBC : %s' % str(last_rgb_measurement))
+        # Split wait time into smaller steps to make exiting thread more responsive
+        steps = 100
+        for i in range(steps):
+            sleep_time = (1.0 * LOG_RGB_INT) / (1.0 * steps)
+            time.sleep(sleep_time)
+            if log_rgb_exit:
+                pr('log_rgb: Exit thread')
+                return
+
+
 def measure(debug=False):
+    global last_rgb_measurement
     r, g, b, c = tcs.get_raw_data()
+    last_rgb_measurement = [r, b, b, c]
     if debug:
         prdbg('R: %5d G: %5d B: %5d C: %5d' % (r, g, b, c))
     return r, g, b, c
@@ -167,8 +186,10 @@ def app(config_det, config_rgb, config_color):
     det_threshold = config_det['threshold']
     rgb_stable_cnt = config_rgb['stable_cnt']
     rgb_stable_dist = config_rgb['stable_dist']
-    pr('Starting app with thres: %5d, stable count: %5d, stable_dist: %5d' %
-       (det_threshold, rgb_stable_cnt, rgb_stable_dist))
+    rgb_max_dist = config_rgb['max_dist']
+    pr('Starting app with detection threshold: %d' % det_threshold)
+    pr('Strating color detection with stable count: %d, stable_dist: %d using max distance: %d' %
+       (rgb_stable_cnt, rgb_stable_dist, rgb_max_dist))
     while 42:
         detect_cube(det_threshold)
         led_on()
@@ -182,26 +203,33 @@ def app(config_det, config_rgb, config_color):
 
 def app2(config_det, config_rgb, config_color, map_station_mp3_color):
     global tcs
-
+    global log_rgb_exit
     check_config_app2(config_color, map_station_mp3_color)
 
-    t = threading.Thread(target=play_music.main, name='play_music.main', args=(map_station_mp3_color,))
-    t.start()
+    # Start play_music and rbg_log threads
+    pm = threading.Thread(target=play_music.main, name='play_music.main', args=(map_station_mp3_color,))
+    pm.start()
+    rgb_log = threading.Thread(target=log_rgb, name='log_rgb')
+    rgb_log.start()
 
     det_threshold = config_det['threshold']
     rgb_stable_cnt = config_rgb['stable_cnt']
     rgb_stable_dist = config_rgb['stable_dist']
     rgb_max_dist = config_rgb['max_dist']
-    pr('Starting app with thres: %5d, stable count: %5d, stable_dist: %5d using max distance: %5d' %
-       (det_threshold, rgb_stable_cnt, rgb_stable_dist, rgb_max_dist))
+    pr('Starting app with detection threshold: %d' % det_threshold)
+    pr('Strating color detection with stable count: %d, stable_dist: %d using max distance: %d' %
+       (rgb_stable_cnt, rgb_stable_dist, rgb_max_dist))
     try:
         while 42:
             detect_cube(det_threshold)
             led_on()
             res = get_stable_rgb(rgb_stable_cnt, rgb_stable_dist)
             color = get_color(res, config_color, rgb_max_dist)
-            if not t.is_alive():
-                prerr('Thread %s unexpectedly died. Exiting...' % t.getName())
+            if not pm.is_alive():
+                prerr('Thread %s unexpectedly died. Exiting...' % pm.getName())
+                return
+            if not rgb_log.is_alive():
+                prerr('Thread %s unexpectedly died. Exiting...' % rgb_log.getName())
                 return
             if color is not None:
                 play_music.stop_playing = False
@@ -212,7 +240,9 @@ def app2(config_det, config_rgb, config_color, map_station_mp3_color):
             play_music.stop_playing = True
     except KeyboardInterrupt:
         play_music.exit_thread = True
-        t.join(3)
+        log_rgb_exit = True
+        pm.join(3)
+        rgb_log.join(3)
 
 
 def check_config_app2(config_color, config_map_color_mp3):
@@ -262,8 +292,6 @@ def color_analyse(config_color):
     def getKey(item):
         return item[0]
 
-    res = []
-
     # Print results
     print('******************** Distance between all result ********************')
 
@@ -272,6 +300,7 @@ def color_analyse(config_color):
 
     cs_map = (
         ('RGB', dummy),
+        # import colorsys
         # Pretty useless since differences in all colorspaces are the same
         # ('YIQ', colorsys.rgb_to_yiq),
         # ('HLS', colorsys.rgb_to_hls),
