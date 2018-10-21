@@ -178,6 +178,6 @@ def config_load(fname):
         pr('No config file given. Using default')
         return DEF_CONFIG
 
-        pr('Trying to load config file: %s' % fname)
+    pr('Trying to load config file: %s' % fname)
     with open(fname, 'r') as infile:
         return yaml.load(infile)

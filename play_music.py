@@ -2,15 +2,15 @@
 # -*- coding: utf-8 -*-
 
 
+import os.path
 import time
 
-import alsaaudio
 import RPi.GPIO as GPIO
-import os.path
+import alsaaudio
 import pygame
 
-from config import DEF_STATION_GPIOS, DEF_STATION_GPIO_MAP, DEF_STATION_COLOR_MP3_MAP, DEF_PATH_MP3
-from helper import pr, prdbg
+from config import DEF_STATION_GPIOS, DEF_STATION_GPIO_MAP, DEF_PATH_MP3
+from helper import pr, prwarn, prerr, prdbg
 
 DEF_AUDIO_DEVICE = 'PCM'
 
@@ -19,7 +19,7 @@ stop_playing = False
 start_playing = False
 
 
-class UndefinedError(Exception):
+class UndefinedStation(Exception):
     def __init__(self, message):
         self.message = message
 
@@ -35,11 +35,11 @@ def get_station():
         gpios_in.append(GPIO.input(gpio))
 
     for gpios, station in DEF_STATION_GPIO_MAP:
-        pr('Stations: %s %s %s' % (str(gpios_in), str(gpios), str(station)))
+        prdbg('Trying to match stations: %s %s %s' % (str(gpios_in), str(gpios), str(station)))
         if tuple(gpios_in) == gpios:
             return station
 
-    raise UndefinedError('Station %s not defined' % str(gpios_in))
+    raise UndefinedStation('For GPIOs %s no station defined' % str(gpios_in))
 
 
 def get_mp3_filename(map_station_mp3_color, cur_station, cur_color):
@@ -47,7 +47,7 @@ def get_mp3_filename(map_station_mp3_color, cur_station, cur_color):
         if cur_station == station and \
                 cur_color == color:
             return fn
-    raise UndefinedError('Filename not defined for %s, %s' % (cur_station, cur_color))
+    raise MP3FileError('Filename not defined for %s, %s' % (cur_station, cur_color))
 
 
 def convert_fn(fn):
@@ -106,10 +106,17 @@ def main(map_station_mp3_color):
     pr('play_music.main: Starting thread')
     setup()
     check_mp3_files(map_station_mp3_color)
-    station = get_station()
+
+    try:
+        station = get_station()
+    except UndefinedStation as e:
+        prerr('UndefinedStationError: %s . Exiting ...' % e)
+        endprogram()
+        return
+
     try:
         while 42:
-            while start_playing == False:
+            while not start_playing:
                 time.sleep(0.1)
                 if exit_thread:
                     pr('play_music.main: Exit thread')
@@ -120,27 +127,15 @@ def main(map_station_mp3_color):
                 fn = get_mp3_filename(map_station_mp3_color, station, start_playing)
                 fn = DEF_PATH_MP3 + convert_fn(fn)
                 play(fn)
-                if exit_thread == True:
+                if exit_thread:
                     pr('play_music.main: Exit thread')
                     endprogram()
                     return
                 time.sleep(1)
-            except UndefinedError as e:
+            except MP3FileError as e:
                 pr(e)
                 pass
             start_playing = False
 
     except KeyboardInterrupt:
         endprogram()
-
-
-if __name__ == '__main__':
-    # import cProfile
-    # import pstats
-
-    # cProfile.run('main()', 'restats')
-    # p = pstats.Stats('restats')
-    # p.sort_stats('cumulative')
-    # p.print_stats()
-    # p.strip_dirs().sort_stats(-1).print_stats()
-    main()

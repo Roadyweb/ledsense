@@ -36,7 +36,7 @@ from docopt import docopt
 # import pydevd; pydevd.settrace('192.168.178.80')
 import play_music
 from config import config_save_default, config_load
-from helper import draw_diagram, get_rgb_distance, get_rgb_length, pr, prdbg, prerr, prwarn
+from helper import DrawDiagram, get_rgb_distance, get_rgb_length, pr, prdbg, prerr, prwarn
 
 GPIO_LED = 4
 
@@ -50,8 +50,7 @@ LED_TOGGLE_HOLDOFF = 0.060
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', datefmt='%Y.%m.%d %H:%M:%S', level=logging.DEBUG)
 
-
-LOG_RGB_INT = 5    # seconds
+LOG_RGB_INT = 10  # seconds
 log_rgb_exit = False
 last_rgb_measurement = [-1, -1, -1, -1]
 
@@ -165,14 +164,13 @@ def get_color(rgb, colors, max_rgb_dist):
     min_dist = 999999999
     match = 0
     for color in colors:
-        color_name = color[0]
         color_rgb = color[1]
         dist = get_rgb_distance(rgb, color_rgb)
         if dist < min_dist:
             min_dist = dist
             match = color
 
-    pr('%-15s - Distance: %5d - Cur. RGB: %-25s RGB %-20s' %
+    pr('%-15s - Distance: %5d - Cur. RGB: %-20s RGB %-20s' %
        (match[0], min_dist, str(rgb), str(match[1])))
 
     if min_dist > max_rgb_dist:
@@ -195,7 +193,7 @@ def app(config_det, config_rgb, config_color):
         led_on()
         res = get_stable_rgb(rgb_stable_cnt, rgb_stable_dist)
         # print(res)
-        color = get_color(res, config_color)
+        color = get_color(res, config_color, rgb_max_dist)
         pr('%-15s - Distance: %5d - Cur. RGB: %-25s RGB %-20s' %
            (color[0], color[2], str(res), str(color[1])))
         detect_cube_removal(det_threshold)
@@ -204,13 +202,6 @@ def app(config_det, config_rgb, config_color):
 def app2(config_det, config_rgb, config_color, map_station_mp3_color):
     global tcs
     global log_rgb_exit
-    check_config_app2(config_color, map_station_mp3_color)
-
-    # Start play_music and rbg_log threads
-    pm = threading.Thread(target=play_music.main, name='play_music.main', args=(map_station_mp3_color,))
-    pm.start()
-    rgb_log = threading.Thread(target=log_rgb, name='log_rgb')
-    rgb_log.start()
 
     det_threshold = config_det['threshold']
     rgb_stable_cnt = config_rgb['stable_cnt']
@@ -219,6 +210,15 @@ def app2(config_det, config_rgb, config_color, map_station_mp3_color):
     pr('Starting app with detection threshold: %d' % det_threshold)
     pr('Strating color detection with stable count: %d, stable_dist: %d using max distance: %d' %
        (rgb_stable_cnt, rgb_stable_dist, rgb_max_dist))
+
+    check_config_app2(config_color, map_station_mp3_color)
+
+    # Start play_music and rbg_log threads
+    pm = threading.Thread(target=play_music.main, name='play_music.main', args=(map_station_mp3_color,))
+    pm.start()
+    rgb_log = threading.Thread(target=log_rgb, name='log_rgb')
+    rgb_log.start()
+
     try:
         while 42:
             detect_cube(det_threshold)
@@ -239,6 +239,9 @@ def app2(config_det, config_rgb, config_color, map_station_mp3_color):
             detect_cube_removal(det_threshold)
             play_music.stop_playing = True
     except KeyboardInterrupt:
+        pass
+
+    finally:
         play_music.exit_thread = True
         log_rgb_exit = True
         pm.join(3)
@@ -282,14 +285,15 @@ def check_config_app2(config_color, config_map_color_mp3):
             for color_name, color_rgb in config_color:
                 # prdbg('Color %s, Map: %s' % (str(color_name), str(map_color_name)))
                 if color_name == map_color_name:
-                    # prdbg('Found color %s in map: %s for station %d' % (str(color_name), str(map_color_name), map_station))
+                    # prdbg('Found color %s in map: %s for station %d' %
+                    #       (str(color_name), str(map_color_name), map_station))
                     found += 1
             if found == 0:
                 prwarn('Color %30s not found for station: %d' % (str(map_color_name), station))
 
 
 def color_analyse(config_color):
-    def getKey(item):
+    def get_key(item):
         return item[0]
 
     # Print results
@@ -324,7 +328,7 @@ def color_analyse(config_color):
 
         print('******************** Colorspace %s **********' % cs_name)
         # pprint.pprint(res)
-        sorted_res = sorted(res, key=getKey)
+        sorted_res = sorted(res, key=get_key)
         # pprint.pprint(sorted_res)
         for entry in sorted_res[:10]:
             # print(entry)
@@ -389,7 +393,7 @@ def diff():
 def meas(conf_led_on, toggle):
     global tcs
 
-    dd = draw_diagram(40)
+    dd = DrawDiagram(40)
 
     if toggle:
         while 42:
@@ -440,7 +444,7 @@ def test_speed():
     rep_cnt = 2
     cycle_cnt = 20
 
-    dd = draw_diagram(40)
+    dd = DrawDiagram(40)
     res = []
 
     try:
