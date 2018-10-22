@@ -186,9 +186,15 @@ def config_load(fname):
         return yaml.load(infile)
 
 
-def check_config_app2(config_color, config_map_color_mp3):
-    # Check config colors vs. map_color_mp3
-    pr('Check config colors vs. map_color_mp3')
+def check_configs_color_vs_map_mp3(config_color, config_map_color_mp3):
+    """
+    Check if all colors defined in config_color are also available for every station in config_map_color_mp3
+    :param config_color: configuration (color, RGB)
+    :param config_map_color_mp3: configuration (color, station, MP3_fn)
+    :return: number of warnings
+    """
+    pr('Check colors from config colors are in map_color_mp3')
+    warn = 0
     for color_name, color_rgb in config_color:
         stations = []
         found = 0
@@ -200,11 +206,25 @@ def check_config_app2(config_color, config_map_color_mp3):
                 found += 1
         if found == 0:
             prwarn('Color %s not found' % (str(color_name)))
+            warn += 1
         else:
             pr('Found color %30s for station: %s' % (str(color_name), str(stations)))
+    if warn == 0:
+        pr('Check passed. OK')
+        return warn
+    prwarn('Check failed. %d warnings occured' % warn)
+    return warn
 
-    # Check map_color_mp3 vs. config colors
-    pr('Check map_color_mp3 vs. config colors')
+
+def check_configs_map_mp3_vs_color(config_color, config_map_color_mp3):
+    """
+    Check if all colors defined in config_map_color_mp3 are also available for every station in config_color
+    :param config_color: configuration (color, RGB)
+    :param config_map_color_mp3: configuration (color, station, MP3_fn)
+    :return: number of warnings
+    """
+    pr('Check colors from map_color_mp3 are in config_color')
+    warn = 0
     # Get all available stations
     stations = []
     for station, mp3_fn, map_color_name in config_map_color_mp3:
@@ -228,6 +248,12 @@ def check_config_app2(config_color, config_map_color_mp3):
                     found += 1
             if found == 0:
                 prwarn('Color %30s not found for station: %d' % (str(map_color_name), station))
+                warn += 1
+    if warn == 0:
+        pr('Check passed. OK')
+        return warn
+    prwarn('Check failed. %d warnings occured' % warn)
+    return warn
 
 
 class MP3FileError(Exception):

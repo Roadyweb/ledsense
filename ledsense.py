@@ -35,7 +35,8 @@ from docopt import docopt
 # Uncomment to remote debug
 # import pydevd; pydevd.settrace('192.168.178.80')
 import play_music
-from config import config_save_default, config_load, check_config_app2, check_mp3_files, UndefinedStation, get_station
+from config import config_save_default, config_load, check_configs_color_vs_map_mp3, check_configs_map_mp3_vs_color, \
+    check_mp3_files, UndefinedStation, get_station
 from helper import DrawDiagram, get_rgb_distance, get_rgb_length, pr, prdbg, prerr
 
 GPIO_LED = 4
@@ -210,7 +211,8 @@ def app2(config_det, config_rgb, config_color, map_station_mp3_color):
     pr('Strating color detection with stable count: %d, stable_dist: %d using max distance: %d' %
        (rgb_stable_cnt, rgb_stable_dist, rgb_max_dist))
 
-    check_config_app2(config_color, map_station_mp3_color)
+    check_configs_color_vs_map_mp3(config_color, map_station_mp3_color)
+    check_configs_map_mp3_vs_color(config_color, map_station_mp3_color)
 
     check_mp3_files(map_station_mp3_color)
 

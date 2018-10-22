@@ -1,9 +1,10 @@
 import unittest
 
 import numpy
+import pprint
 
 import ledsense
-import helper
+from config import check_configs_color_vs_map_mp3, check_configs_map_mp3_vs_color
 import TCS34725
 
 #########################################################
@@ -102,6 +103,59 @@ class TestCaseGetStableRgb(unittest.TestCase):
             avg = self.rgb.get_value()[0]
             # print('get_stable_ret: %s avg: %s' % (ret, avg))
             self.assertEqual(ret, [avg, avg, avg], 'Returned RGB must match input RGB')
+
+
+class TestCaseCheckConfigsColorVsMapMp3(unittest.TestCase):
+    def setUp(self):
+        self.station_cnt = 10
+        self.config_color = []
+        self.map_station_mp3_color = []
+        for i in range(ord('a'), ord('n')):
+            color = 10 * chr(i)
+            self.config_color.append([color, [0, 0, 0]])
+            for station in range(self.station_cnt):
+                self.map_station_mp3_color.append([station, 'dummy_fn', color])
+
+    def test_correct_configs(self):
+        warn = check_configs_color_vs_map_mp3(self.config_color, self.map_station_mp3_color)
+        self.assertEqual(warn, 0, 'Expected return is 0 warning, but %d occured' % warn)
+
+    def test_less_colors_in_map(self):
+        exp_warn = 0
+        while len(self.map_station_mp3_color) > 0:
+            # pprint.pprint(self.map_station_mp3_color)
+            for _ in range(self.station_cnt):
+                warn = check_configs_color_vs_map_mp3(self.config_color, self.map_station_mp3_color)
+                self.assertEqual(warn, exp_warn, 'Expected return is %d warning, but %d occured' % (exp_warn, warn))
+                self.map_station_mp3_color.pop()
+            exp_warn += 1
+            warn = check_configs_color_vs_map_mp3(self.config_color, self.map_station_mp3_color)
+            self.assertEqual(warn, exp_warn, 'Expected return is %d warning, but %d occured' % (exp_warn, warn))
+
+
+class TestCaseCheckConfigsMapMp3VsColors(unittest.TestCase):
+    def setUp(self):
+        self.station_cnt = 10
+        self.config_color = []
+        self.map_station_mp3_color = []
+        for i in range(ord('a'), ord('n')):
+            color = 10 * chr(i)
+            self.config_color.append([color, [0, 0, 0]])
+            for station in range(self.station_cnt):
+                self.map_station_mp3_color.append([station, 'dummy_fn', color])
+
+    def test_correct_configs(self):
+        warn = check_configs_map_mp3_vs_color(self.config_color, self.map_station_mp3_color)
+        self.assertEqual(warn, 0, 'Expected return is 0 warning, but %d occured' % warn)
+
+    def test_less_colors_in_map(self):
+        exp_warn = 0
+        while len(self.config_color) > 0:
+            # pprint.pprint(self.map_station_mp3_color)
+            warn = check_configs_map_mp3_vs_color(self.config_color, self.map_station_mp3_color)
+            self.assertEqual(warn, exp_warn, 'Expected return is %d warning, but %d occured' % (exp_warn, warn))
+            self.config_color.pop()
+            exp_warn += self.station_cnt
 
 
 if __name__ == '__main__':
