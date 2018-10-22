@@ -105,6 +105,40 @@ class TestCaseGetStableRgb(unittest.TestCase):
             self.assertEqual(ret, [avg, avg, avg], 'Returned RGB must match input RGB')
 
 
+class TestCaseGetColor(unittest.TestCase):
+    def setUp(self):
+        self.config_color = []
+        color = 0
+        for i in range(0, 1000, 100):
+            colorname = str(i)
+            self.config_color.append([colorname, [i, i, i]])
+            color += 100
+
+    def test_color_correct(self):
+        for i in range(0, 1000, 100):
+            color = ledsense.get_color([i, i, i], self.config_color, 1)
+            print(color)
+            colorname = color[0]
+            self.assertEqual(colorname, str(i), 'Expected %s, got %s' % (str(i), color))
+
+    def test_color_correct_with_offset(self):
+        max_dist = 10
+        for i in range(0, 1000, 100):
+            for dist in range(0, max_dist + 1):
+                color = ledsense.get_color([i + dist, i, i], self.config_color, max_dist)
+                colorname = color[0]
+                colordist = color[2]
+                self.assertEqual(colorname, str(i), 'Colorname: Expected %s, got %s' % (str(i), color))
+                self.assertEqual(colordist, dist, 'Colordistance: Expected %s, got %s' % (dist, colordist))
+
+    def test_color_correct_with_offset_exceeds_max_dist(self):
+        max_dist = 10
+        for i in range(0, 1000, 100):
+            for dist in range(max_dist + 1, max_dist + 10):
+                color = ledsense.get_color([i + dist, i, i], self.config_color, max_dist)
+                self.assertEqual(color, None, 'Colorname: Expected %s, got %s' % (str(i), color))
+
+
 class TestCaseCheckConfigsColorVsMapMp3(unittest.TestCase):
     def setUp(self):
         self.station_cnt = 10
