@@ -287,10 +287,13 @@ def check_mp3_files(map_station_mp3_color):
 
 
 def check_for_valid_mp3(path):
-    ret = subprocess.check_output(["./mpck", path])
+    try:
+        ret = subprocess.check_output(["./mpck", path])
+    except subprocess.CalledProcessError as e:
+        ret = e.output
     ret = ret.decode("utf-8")
     # print(ret)
-    PATTERN = r'bitrate\s*(\w*).*samplerate\s*(\w*).*frames\s*(\w*).*time\s*([\w\:\.]*).*unidentified\s*(\w*).*errors\s*(\w*).*result\s*(\w*)'
+    PATTERN = r'bitrate\s*(\w*).*samplerate\s*(\w*).*frames\s*(\w*).*time\s*([\w\:\.]*).*unidentified\s*([^\n]*).*errors\s*([^\n]*).*result\s*(\w*)'
     matchObj = re.search(PATTERN, ret, re.S)
     res = {}
     if matchObj:
@@ -303,7 +306,6 @@ def check_for_valid_mp3(path):
         res['result'] = matchObj.group(7)
     # print(res)
     return res
-
 
 class UndefinedStation(Exception):
     def __init__(self, message):

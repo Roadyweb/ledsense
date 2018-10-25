@@ -2,9 +2,12 @@ import unittest
 
 import numpy
 import pprint
+import os
+import shutil
+import subprocess
 
 import ledsense
-from config import check_configs_color_vs_map_mp3, check_configs_map_mp3_vs_color
+from config import check_configs_color_vs_map_mp3, check_configs_map_mp3_vs_color, check_for_valid_mp3
 import TCS34725
 
 #########################################################
@@ -13,21 +16,41 @@ import TCS34725
 # TEST NEED TO RUN ON TARGET (import RPi.GPIO as GPIO   #
 #########################################################
 
-def corrupt_file(path):
+MP3_TEST_FILE = './mp3/test.mp3'
+MP3_TEST_FILE_COPY = './mp3/test.mp3.copy'
+
+def replace_byte_with_zero(path, byte_pos):
     """
-    Replace randomly a byte in a file
+    Replace randomly a byte with zero in a file
     :param path: filename
     """
     import random
     size = os.path.getsize(path)
     print('File size for %s is %d bytes' % (path, size))
-    byte_pos = int(size * random.random())
     print('Random number is %d bytes' % byte_pos)
     ret = subprocess.check_output(["dd", 'if=/dev/zero',  'of=%s' % path, 'bs=1',  'seek=%d' % byte_pos, 'count=1', 'conv=notrunc'])
     print(ret)
     size = os.path.getsize(path)
     print('File size for %s is %d bytes' % (path, size))
 
+
+def remove_bytes_from_file(path, byte_pos, num_of_bytes=2):
+    """
+    Replace randomly a byte with zero in a file
+    :param path: filename
+    """
+    import random
+    size = os.path.getsize(path)
+    print('File size for %s is %d bytes' % (path, size))
+    print('Random number is %d bytes' % byte_pos)
+    ret = subprocess.check_output(['dd', 'if=%s' % path, 'of=%s' % (path + '_start'), 'bs=2', 'count=%d' % byte_pos])
+    ret = subprocess.check_output(['dd', 'if=%s' % path, 'of=%s' % (path + '_end'), 'bs=2', 'skip=%d' % (byte_pos + 1)])
+    ret = subprocess.check_output(['cat %s %s > %s' % (path + '_start', path + '_end', path)], shell=True)
+    ret = subprocess.check_output(['rm', path + '_end'])
+    ret = subprocess.check_output(['rm', path + '_start'])
+
+    size = os.path.getsize(path)
+    print('File size for %s is %d bytes' % (path, size))
 
 
 class CreateRGBMeasurement(object):
@@ -206,6 +229,29 @@ class TestCaseCheckConfigsMapMp3VsColors(unittest.TestCase):
             self.assertEqual(warn, exp_warn, 'Expected return is %d warning, but %d occured' % (exp_warn, warn))
             self.config_color.pop()
             exp_warn += self.station_cnt
+
+
+class TestCaseCheckForValidMp3(unittest.TestCase):
+    def setUp(self):
+        shutil.copyfile(MP3_TEST_FILE, MP3_TEST_FILE_COPY)
+
+    def test_correct_file(self):
+        ret = check_for_valid_mp3(MP3_TEST_FILE_COPY)
+        self.assertEqual(ret['result'], 'Ok',
+                         'Expected return is Ok, but was %s (All return: %s)' % (ret['result'], ret))
+
+    def test_incorrect_file_with_removed_bytes(self):
+        # replace_byte_with_zero(MP3_TEST_FILE_COPY, i)
+        remove_bytes_from_file(MP3_TEST_FILE_COPY, 6000)
+        ret = check_for_valid_mp3(MP3_TEST_FILE_COPY)
+        print(ret)
+        self.assertEqual(ret['result'], 'Bad',
+                         'Expected return is Bad, but was %s (All return: %s)' %
+                         (ret['result'], ret))
+
+
+    def tearDown(self):
+        os.remove(MP3_TEST_FILE_COPY)
 
 
 if __name__ == '__main__':
