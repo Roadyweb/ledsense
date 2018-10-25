@@ -13,6 +13,22 @@ import TCS34725
 # TEST NEED TO RUN ON TARGET (import RPi.GPIO as GPIO   #
 #########################################################
 
+def corrupt_file(path):
+    """
+    Replace randomly a byte in a file
+    :param path: filename
+    """
+    import random
+    size = os.path.getsize(path)
+    print('File size for %s is %d bytes' % (path, size))
+    byte_pos = int(size * random.random())
+    print('Random number is %d bytes' % byte_pos)
+    ret = subprocess.check_output(["dd", 'if=/dev/zero',  'of=%s' % path, 'bs=1',  'seek=%d' % byte_pos, 'count=1', 'conv=notrunc'])
+    print(ret)
+    size = os.path.getsize(path)
+    print('File size for %s is %d bytes' % (path, size))
+
+
 
 class CreateRGBMeasurement(object):
     def __init__(self, inc=0.0):

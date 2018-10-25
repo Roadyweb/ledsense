@@ -1,5 +1,7 @@
 import logging
 import os.path
+import re
+import subprocess
 
 import TCS34725
 import yaml
@@ -266,13 +268,41 @@ def convert_fn(fn):
 
 
 def check_mp3_files(map_station_mp3_color):
-    # pygame.mixer.init()
+    pr('Check mp3 files in map station mp3 color')
+    errors = 0
     for station, fn, color in map_station_mp3_color:
         fn = convert_fn(fn)
         path = DEF_PATH_MP3 + fn
         if not (os.path.isfile(path)):
             raise MP3FileError('File %s does not exist' % path)
-        # TODO: look for a way to determine a valid mp3 file
+        res = check_for_valid_mp3(path)
+        if 'result' not in res or res['result'] != 'Ok':
+            errors += 1
+            prwarn('File %s has errors: %s' % (path, str(res)))
+    if errors == 0:
+        pr('Check passed. OK')
+    else:
+        prwarn('%d errors found.' % errors)
+    return errors
+
+
+def check_for_valid_mp3(path):
+    ret = subprocess.check_output(["./mpck", path])
+    ret = ret.decode("utf-8")
+    # print(ret)
+    PATTERN = r'bitrate\s*(\w*).*samplerate\s*(\w*).*frames\s*(\w*).*time\s*([\w\:\.]*).*unidentified\s*(\w*).*errors\s*(\w*).*result\s*(\w*)'
+    matchObj = re.search(PATTERN, ret, re.S)
+    res = {}
+    if matchObj:
+        res['bitrate'] = matchObj.group(1)
+        res['samplerate'] = matchObj.group(2)
+        res['frames'] = matchObj.group(3)
+        res['time'] = matchObj.group(4)
+        res['unidentified'] = matchObj.group(5)
+        res['errors'] = matchObj.group(6)
+        res['result'] = matchObj.group(7)
+    # print(res)
+    return res
 
 
 class UndefinedStation(Exception):
