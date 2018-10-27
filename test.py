@@ -7,7 +7,7 @@ import shutil
 import subprocess
 
 import ledsense
-from config import check_configs_color_vs_map_mp3, check_configs_map_mp3_vs_color, check_for_valid_mp3
+import config
 import TCS34725
 
 #########################################################
@@ -16,8 +16,11 @@ import TCS34725
 # TEST NEED TO RUN ON TARGET (import RPi.GPIO as GPIO   #
 #########################################################
 
-MP3_TEST_FILE = './mp3/test.mp3'
-MP3_TEST_FILE_COPY = './mp3/test.mp3.copy'
+MP3_TEST_FILE = 'test.mp3'
+MP3_TEST_FILE_COPY = 'test.copy.mp3'
+
+DEF_PATH_MP3 = config.DEF_PATH_MP3
+
 
 def replace_byte_with_zero(path, byte_pos):
     """
@@ -28,7 +31,8 @@ def replace_byte_with_zero(path, byte_pos):
     size = os.path.getsize(path)
     print('File size for %s is %d bytes' % (path, size))
     print('Random number is %d bytes' % byte_pos)
-    ret = subprocess.check_output(["dd", 'if=/dev/zero',  'of=%s' % path, 'bs=1',  'seek=%d' % byte_pos, 'count=1', 'conv=notrunc'])
+    ret = subprocess.check_output(
+        ["dd", 'if=/dev/zero', 'of=%s' % path, 'bs=1', 'seek=%d' % byte_pos, 'count=1', 'conv=notrunc'])
     print(ret)
     size = os.path.getsize(path)
     print('File size for %s is %d bytes' % (path, size))
@@ -51,6 +55,11 @@ def remove_bytes_from_file(path, byte_pos, num_of_bytes=2):
 
     size = os.path.getsize(path)
     print('File size for %s is %d bytes' % (path, size))
+
+
+def test_convert_fn(fn):
+    # dummy function to be able to test check_mp3_files
+    return fn
 
 
 class CreateRGBMeasurement(object):
@@ -190,7 +199,7 @@ class TestCaseCheckConfigsColorVsMapMp3(unittest.TestCase):
                 self.map_station_mp3_color.append([station, 'dummy_fn', color])
 
     def test_correct_configs(self):
-        warn = check_configs_color_vs_map_mp3(self.config_color, self.map_station_mp3_color)
+        warn = config.check_configs_color_vs_map_mp3(self.config_color, self.map_station_mp3_color)
         self.assertEqual(warn, 0, 'Expected return is 0 warning, but %d occured' % warn)
 
     def test_less_colors_in_map(self):
@@ -198,11 +207,11 @@ class TestCaseCheckConfigsColorVsMapMp3(unittest.TestCase):
         while len(self.map_station_mp3_color) > 0:
             # pprint.pprint(self.map_station_mp3_color)
             for _ in range(self.station_cnt):
-                warn = check_configs_color_vs_map_mp3(self.config_color, self.map_station_mp3_color)
+                warn = config.check_configs_color_vs_map_mp3(self.config_color, self.map_station_mp3_color)
                 self.assertEqual(warn, exp_warn, 'Expected return is %d warning, but %d occured' % (exp_warn, warn))
                 self.map_station_mp3_color.pop()
             exp_warn += 1
-            warn = check_configs_color_vs_map_mp3(self.config_color, self.map_station_mp3_color)
+            warn = config.check_configs_color_vs_map_mp3(self.config_color, self.map_station_mp3_color)
             self.assertEqual(warn, exp_warn, 'Expected return is %d warning, but %d occured' % (exp_warn, warn))
 
 
@@ -218,14 +227,14 @@ class TestCaseCheckConfigsMapMp3VsColors(unittest.TestCase):
                 self.map_station_mp3_color.append([station, 'dummy_fn', color])
 
     def test_correct_configs(self):
-        warn = check_configs_map_mp3_vs_color(self.config_color, self.map_station_mp3_color)
+        warn = config.check_configs_map_mp3_vs_color(self.config_color, self.map_station_mp3_color)
         self.assertEqual(warn, 0, 'Expected return is 0 warning, but %d occured' % warn)
 
     def test_less_colors_in_map(self):
         exp_warn = 0
         while len(self.config_color) > 0:
             # pprint.pprint(self.map_station_mp3_color)
-            warn = check_configs_map_mp3_vs_color(self.config_color, self.map_station_mp3_color)
+            warn = config.check_configs_map_mp3_vs_color(self.config_color, self.map_station_mp3_color)
             self.assertEqual(warn, exp_warn, 'Expected return is %d warning, but %d occured' % (exp_warn, warn))
             self.config_color.pop()
             exp_warn += self.station_cnt
@@ -233,25 +242,70 @@ class TestCaseCheckConfigsMapMp3VsColors(unittest.TestCase):
 
 class TestCaseCheckForValidMp3(unittest.TestCase):
     def setUp(self):
-        shutil.copyfile(MP3_TEST_FILE, MP3_TEST_FILE_COPY)
+        shutil.copyfile(DEF_PATH_MP3 + MP3_TEST_FILE, DEF_PATH_MP3 + MP3_TEST_FILE_COPY)
 
     def test_correct_file(self):
-        ret = check_for_valid_mp3(MP3_TEST_FILE_COPY)
+        ret = config.check_for_valid_mp3(DEF_PATH_MP3 + MP3_TEST_FILE_COPY)
         self.assertEqual(ret['result'], 'Ok',
                          'Expected return is Ok, but was %s (All return: %s)' % (ret['result'], ret))
 
     def test_incorrect_file_with_removed_bytes(self):
         # replace_byte_with_zero(MP3_TEST_FILE_COPY, i)
-        remove_bytes_from_file(MP3_TEST_FILE_COPY, 6000)
-        ret = check_for_valid_mp3(MP3_TEST_FILE_COPY)
+        remove_bytes_from_file(DEF_PATH_MP3 + MP3_TEST_FILE_COPY, 6000)
+        ret = config.check_for_valid_mp3(DEF_PATH_MP3 + MP3_TEST_FILE_COPY)
         print(ret)
         self.assertEqual(ret['result'], 'Bad',
                          'Expected return is Bad, but was %s (All return: %s)' %
                          (ret['result'], ret))
 
+    def tearDown(self):
+        os.remove(DEF_PATH_MP3 + MP3_TEST_FILE_COPY)
+
+
+class TestCaseCheckMp3Files(unittest.TestCase):
+    def setUp(self):
+        shutil.copyfile(DEF_PATH_MP3 + MP3_TEST_FILE, DEF_PATH_MP3 + MP3_TEST_FILE_COPY)
+        config.convert_fn = test_convert_fn
+
+    def test_correct_files(self):
+        # Setup config map_station_mp3_color and test after each step
+        station_cnt = 5
+        map_station_mp3_color = []
+        for i in range(ord('a'), ord('c')):
+            color = 10 * chr(i)
+            for station in range(station_cnt):
+                map_station_mp3_color.append([station, MP3_TEST_FILE_COPY, color])
+                errors = config.check_mp3_files(map_station_mp3_color)
+                self.assertEqual(errors, 0,
+                                 'Expected return is 0, but was %d' % (errors))
+
+    def test_corrupted_files(self):
+        remove_bytes_from_file(DEF_PATH_MP3 + MP3_TEST_FILE_COPY, 6000)
+        # Setup config map_station_mp3_color and test after each step
+        station_cnt = 5
+        map_station_mp3_color = []
+        exp_errors = 0
+        for i in range(ord('a'), ord('c')):
+            color = 10 * chr(i)
+            for station in range(station_cnt):
+                exp_errors += 1
+                map_station_mp3_color.append([station, MP3_TEST_FILE_COPY, color])
+                errors = config.check_mp3_files(map_station_mp3_color)
+                self.assertEqual(errors, exp_errors,
+                                 'Expected return is %d, but was %d' % (exp_errors, errors))
+
+    def test_missing_file(self):
+        # Setup config map_station_mp3_color and test after each step
+        station_cnt = 10
+        map_station_mp3_color = []
+        for i in range(ord('a'), ord('n')):
+            color = 10 * chr(i)
+            for station in range(station_cnt):
+                map_station_mp3_color.append([station, 'dummy_fn', color])
+                self.assertRaises(config.MP3FileError, config.check_mp3_files, map_station_mp3_color)
 
     def tearDown(self):
-        os.remove(MP3_TEST_FILE_COPY)
+        os.remove(DEF_PATH_MP3 + MP3_TEST_FILE_COPY)
 
 
 if __name__ == '__main__':
