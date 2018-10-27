@@ -5,7 +5,7 @@
 
 Usage:
   led_sens.py app [CONFIG]
-  led_sens.py app2 [CONFIG]
+  led_sens.py app2 [--eval] [CONFIG]
   led_sens.py color analyse [CONFIG]
   led_sens.py detect [CONFIG]
   led_sens.py diff
@@ -16,6 +16,7 @@ Usage:
   led_sens.py test_speed
 
 Options:
+  -e            Evaluate the detection result by pulling GPIO for OK (8) and NOK (11) to GND
   -h --help     Show this screen.
   --version     Show version.
 
@@ -40,6 +41,8 @@ from config import save_default, load, check_color_vs_map_color_mp3, check_map_c
 from helper import DrawDiagram, get_rgb_distance, get_rgb_length, pr, prdbg, prerr
 
 GPIO_LED = 4
+GPIO_NOK = 11
+GPIO_OK = 8
 
 tcs = None
 
@@ -156,7 +159,7 @@ def get_stable_rgb(count, dist_limit):
     return median
 
 
-def get_color(rgb, colors, max_rgb_dist):
+def get_color(rgb, colors, max_rgb_dist, eval):
     """ Takes an RGB list as argument and matches against DEF_COLORS the closest
         will be uses as match. Returns None if match distance is larger than
         max_rgb_distance.
@@ -170,8 +173,22 @@ def get_color(rgb, colors, max_rgb_dist):
             min_dist = dist
             match = color
 
-    pr('%-15s - Distance: %5d - Cur. RGB: %-20s RGB %-20s' %
-       (match[0], min_dist, str(rgb), str(match[1])))
+    eval_res = '---'
+    if eval:
+        pr('Is color %s correct? Press OK or NOK key' % match[0])
+        # Wait till key is pressed
+        while 42:
+            ok = GPIO.input(GPIO_OK)
+            nok = GPIO.input(GPIO_NOK)
+            if ok == 0 or nok == 0:
+                break
+        if ok == 0:
+            eval_res = 'OK'
+        elif nok == 0:
+            eval_res = 'NOK'
+
+    pr('Found %-15s - Dist %d - Cur. RGB: %-20s RGB %-20s %s' %
+       (match[0], min_dist, str(rgb), str(match[1]), eval_res))
 
     if min_dist > max_rgb_dist:
         prdbg('Max RGB color dist: %d Dist Limit: %d Exiting... ' % (min_dist, max_rgb_dist))
@@ -199,7 +216,7 @@ def app(config_det, config_rgb, config_color):
         detect_cube_removal(det_threshold)
 
 
-def app2(config_det, config_rgb, config_color, map_station_mp3_color):
+def app2(config_det, config_rgb, config_color, map_station_mp3_color, eval=False):
     global tcs
     global log_rgb_exit
 
@@ -233,7 +250,7 @@ def app2(config_det, config_rgb, config_color, map_station_mp3_color):
             detect_cube(det_threshold)
             led_on()
             res = get_stable_rgb(rgb_stable_cnt, rgb_stable_dist)
-            color = get_color(res, config_color, rgb_max_dist)
+            color = get_color(res, config_color, rgb_max_dist, eval)
             if not pm.is_alive():
                 prerr('Thread %s unexpectedly died. Exiting...' % pm.getName())
                 break
@@ -458,6 +475,8 @@ def setup(config):
     GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(GPIO_LED, GPIO.OUT)
+    GPIO.setup(GPIO_NOK, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.setup(GPIO_OK, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     time.sleep(0.05)
     global tcs
     integration_time = config['integration_time'][0]
@@ -474,7 +493,7 @@ def endprogram():
 
 def main():
     args = docopt(__doc__, version='LED Sensing')
-    # prdbg(args)
+    prdbg(args)
     config = load(args['CONFIG'])
     # pprint.pprint(config)
     setup(config['sensor'])
@@ -483,7 +502,7 @@ def main():
         if args['app']:
             app(config['det'], config['rgb'], config['color'])
         elif args['app2']:
-            app2(config['det'], config['rgb'], config['color'], config['map_station_mp3_color'])
+            app2(config['det'], config['rgb'], config['color'], config['map_station_mp3_color'], args['--eval'])
         elif args['color'] == True and args['analyse'] == True:
             color_analyse(config['color'])
         elif args['detect']:
