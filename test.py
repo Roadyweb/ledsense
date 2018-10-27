@@ -199,7 +199,7 @@ class TestCaseCheckConfigsColorVsMapMp3(unittest.TestCase):
                 self.map_station_mp3_color.append([station, 'dummy_fn', color])
 
     def test_correct_configs(self):
-        warn = config.check_configs_color_vs_map_mp3(self.config_color, self.map_station_mp3_color)
+        warn = config.check_color_vs_map_color_mp3(self.config_color, self.map_station_mp3_color)
         self.assertEqual(warn, 0, 'Expected return is 0 warning, but %d occured' % warn)
 
     def test_less_colors_in_map(self):
@@ -207,11 +207,11 @@ class TestCaseCheckConfigsColorVsMapMp3(unittest.TestCase):
         while len(self.map_station_mp3_color) > 0:
             # pprint.pprint(self.map_station_mp3_color)
             for _ in range(self.station_cnt):
-                warn = config.check_configs_color_vs_map_mp3(self.config_color, self.map_station_mp3_color)
+                warn = config.check_color_vs_map_color_mp3(self.config_color, self.map_station_mp3_color)
                 self.assertEqual(warn, exp_warn, 'Expected return is %d warning, but %d occured' % (exp_warn, warn))
                 self.map_station_mp3_color.pop()
             exp_warn += 1
-            warn = config.check_configs_color_vs_map_mp3(self.config_color, self.map_station_mp3_color)
+            warn = config.check_color_vs_map_color_mp3(self.config_color, self.map_station_mp3_color)
             self.assertEqual(warn, exp_warn, 'Expected return is %d warning, but %d occured' % (exp_warn, warn))
 
 
@@ -227,14 +227,14 @@ class TestCaseCheckConfigsMapMp3VsColors(unittest.TestCase):
                 self.map_station_mp3_color.append([station, 'dummy_fn', color])
 
     def test_correct_configs(self):
-        warn = config.check_configs_map_mp3_vs_color(self.config_color, self.map_station_mp3_color)
+        warn = config.check_map_color_mp3_vs_color(self.config_color, self.map_station_mp3_color)
         self.assertEqual(warn, 0, 'Expected return is 0 warning, but %d occured' % warn)
 
     def test_less_colors_in_map(self):
         exp_warn = 0
         while len(self.config_color) > 0:
             # pprint.pprint(self.map_station_mp3_color)
-            warn = config.check_configs_map_mp3_vs_color(self.config_color, self.map_station_mp3_color)
+            warn = config.check_map_color_mp3_vs_color(self.config_color, self.map_station_mp3_color)
             self.assertEqual(warn, exp_warn, 'Expected return is %d warning, but %d occured' % (exp_warn, warn))
             self.config_color.pop()
             exp_warn += self.station_cnt
@@ -245,14 +245,14 @@ class TestCaseCheckForValidMp3(unittest.TestCase):
         shutil.copyfile(DEF_PATH_MP3 + MP3_TEST_FILE, DEF_PATH_MP3 + MP3_TEST_FILE_COPY)
 
     def test_correct_file(self):
-        ret = config.check_for_valid_mp3(DEF_PATH_MP3 + MP3_TEST_FILE_COPY)
+        ret = config.check_valid_mp3_content(DEF_PATH_MP3 + MP3_TEST_FILE_COPY)
         self.assertEqual(ret['result'], 'Ok',
                          'Expected return is Ok, but was %s (All return: %s)' % (ret['result'], ret))
 
     def test_incorrect_file_with_removed_bytes(self):
         # replace_byte_with_zero(MP3_TEST_FILE_COPY, i)
         remove_bytes_from_file(DEF_PATH_MP3 + MP3_TEST_FILE_COPY, 6000)
-        ret = config.check_for_valid_mp3(DEF_PATH_MP3 + MP3_TEST_FILE_COPY)
+        ret = config.check_valid_mp3_content(DEF_PATH_MP3 + MP3_TEST_FILE_COPY)
         print(ret)
         self.assertEqual(ret['result'], 'Bad',
                          'Expected return is Bad, but was %s (All return: %s)' %

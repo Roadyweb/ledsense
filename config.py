@@ -172,13 +172,13 @@ DEF_CONFIG = {
 DEF_PATH_MP3 = './mp3/'
 
 
-def config_save_default():
+def save_default():
     pr('Saving default config to %s' % DEF_CONFIG_FN)
     with open(DEF_CONFIG_FN, 'w') as outfile:
         yaml.dump(DEF_CONFIG, outfile, indent=4)
 
 
-def config_load(fname):
+def load(fname):
     if fname is None:
         pr('No config file given. Using default')
         return DEF_CONFIG
@@ -188,7 +188,7 @@ def config_load(fname):
         return yaml.load(infile)
 
 
-def check_configs_color_vs_map_mp3(config_color, config_map_color_mp3):
+def check_color_vs_map_color_mp3(config_color, config_map_color_mp3):
     """
     Check if all colors defined in config_color are also available for every station in config_map_color_mp3
     :param config_color: configuration (color, RGB)
@@ -218,7 +218,7 @@ def check_configs_color_vs_map_mp3(config_color, config_map_color_mp3):
     return warn
 
 
-def check_configs_map_mp3_vs_color(config_color, config_map_color_mp3):
+def check_map_color_mp3_vs_color(config_color, config_map_color_mp3):
     """
     Check if all colors defined in config_map_color_mp3 are also available for every station in config_color
     :param config_color: configuration (color, RGB)
@@ -275,7 +275,7 @@ def check_mp3_files(map_station_mp3_color):
         path = DEF_PATH_MP3 + fn
         if not (os.path.isfile(path)):
             raise MP3FileError('File %s does not exist' % path)
-        res = check_for_valid_mp3(path)
+        res = check_valid_mp3_content(path)
         if 'result' not in res or res['result'] != 'Ok':
             errors += 1
             prwarn('File %s has errors: %s' % (path, str(res)))
@@ -286,7 +286,7 @@ def check_mp3_files(map_station_mp3_color):
     return errors
 
 
-def check_for_valid_mp3(path):
+def check_valid_mp3_content(path):
     try:
         ret = subprocess.check_output(["./mpck", path])
     except subprocess.CalledProcessError as e:

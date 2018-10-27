@@ -35,7 +35,7 @@ from docopt import docopt
 # Uncomment to remote debug
 # import pydevd; pydevd.settrace('192.168.178.80')
 import play_music
-from config import config_save_default, config_load, check_configs_color_vs_map_mp3, check_configs_map_mp3_vs_color, \
+from config import save_default, load, check_color_vs_map_color_mp3, check_map_color_mp3_vs_color, \
     check_mp3_files, UndefinedStation, get_station
 from helper import DrawDiagram, get_rgb_distance, get_rgb_length, pr, prdbg, prerr
 
@@ -211,8 +211,8 @@ def app2(config_det, config_rgb, config_color, map_station_mp3_color):
     pr('Strating color detection with stable count: %d, stable_dist: %d using max distance: %d' %
        (rgb_stable_cnt, rgb_stable_dist, rgb_max_dist))
 
-    check_configs_color_vs_map_mp3(config_color, map_station_mp3_color)
-    check_configs_map_mp3_vs_color(config_color, map_station_mp3_color)
+    check_color_vs_map_color_mp3(config_color, map_station_mp3_color)
+    check_map_color_mp3_vs_color(config_color, map_station_mp3_color)
 
     check_mp3_files(map_station_mp3_color)
 
@@ -475,7 +475,7 @@ def endprogram():
 def main():
     args = docopt(__doc__, version='LED Sensing')
     # prdbg(args)
-    config = config_load(args['CONFIG'])
+    config = load(args['CONFIG'])
     # pprint.pprint(config)
     setup(config['sensor'])
 
@@ -497,7 +497,7 @@ def main():
         elif args['rgb'] == True and args['stable'] == True:
             rgb_stable(config['rgb'])
         elif args['save_default']:
-            config_save_default()
+            save_default()
         elif args['test_speed']:
             test_speed()
         else:
