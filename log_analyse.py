@@ -9,8 +9,7 @@ REGEX_RGBC = r'[\d\.\:\s]*INFO\sRGBC.*'
 
 REGEX_STATION = r'[\d\.\:\s]*INFO\sFound\sstation\:\s(\w)*'
 
-REGEX_COLOR = r'[\d\.\:\s]*INFO\sFound\s([\w\s\=äüö]*)\s\-\sDist\s(\d*)\s\-\sCur.\sRGB\:\s\[(.*)\]\s*RGB\s*\[(.*)\]\s*(\w*)'
-
+REGEX_COLOR = r'[\d\.\:\s]*INFO\sFound\s([\w\s\=äüö]*)\s\-\sDist\s(\d*)\s\-\sCur.\sRGB\:\s\[(.*)\]\s*RGB\s*\[(.*)\]\s*([\w-]*)'
 
 '''
 raw_data structure
@@ -31,6 +30,10 @@ rawdata = {station_name1: [ {color_name: x, dist: y, rgb_meas: [r, g, b], rgb_co
 '''
 
 
+def unique_list_entries(some_list):
+    return list(set(some_list))
+
+
 def clean_log(lines_list):
     ret = []
     for line in lines_list:
@@ -39,7 +42,8 @@ def clean_log(lines_list):
         if not matchObj:
             ret.append(line)
         else:
-            print('Removing line: %s' % line)
+            # print('Removing line: %s' % line)
+            pass
     removed_lines = len(lines_list) - len(ret)
     print('Removed %d of %d lines' % (removed_lines, len(lines_list)))
     return ret
@@ -53,9 +57,9 @@ def extract_station(lines_list):
         if matchObj:
             station_list.append(int(matchObj.group(1)))
     # Now check that the station number is unique
-    unique_station_list = list(set(station_list))
-    print(unique_station_list)
-    return station_list
+    unique_station_list = unique_list_entries(station_list)
+    # print(unique_station_list)
+    return unique_station_list
 
 
 def extract_color_results(lines_list):
@@ -71,7 +75,8 @@ def extract_color_results(lines_list):
             res['result'] = matchObj.group(5)
             ret.append(res)
         else:
-            print('No color result found in %s' % line)
+            # print('No color result found in %s' % line)
+            pass
     return ret
 
 
@@ -83,7 +88,7 @@ def eval_unique_color_names(raw_data):
             if color_name not in unique_colors:
                 unique_colors[color_name] = 1
             else:
-                unique_colors[color_name] +=1
+                unique_colors[color_name] += 1
     return unique_colors
 
 
@@ -98,7 +103,7 @@ def eval_distance_per_color(raw_data):
                 color_distances[color_name]['values'] = [color_dist]
             else:
                 color_distances[color_name]['values'].append(color_dist)
-    #pprint.pprint(color_distances)
+    # pprint.pprint(color_distances)
 
     # Add some stats
     for color_name, res in color_distances.items():
@@ -123,7 +128,7 @@ def eval_ok_nok_undef(raw_data):
                 color_ok_nok_undef[color_name]['nok'] = 0
                 color_ok_nok_undef[color_name]['undef'] = 0
             if color_res == 'OK':
-                color_ok_nok_undef[color_name]['ok'] +=1
+                color_ok_nok_undef[color_name]['ok'] += 1
             elif color_res == 'NOK':
                 color_ok_nok_undef[color_name]['nok'] += 1
             elif color_res == '---':
@@ -135,7 +140,7 @@ def eval_ok_nok_undef(raw_data):
 
 def main():
     raw_data = {}
-    fn_list = ['station1.log', 'station2.log', 'station12.log']
+    fn_list = ['station1.log', 'station2.log', 'station12.log', 'station3.log', 'station5.log', 'station35.log']
     for fn in fn_list:
         with open(fn, 'r') as file:
             content = file.readlines()
@@ -147,7 +152,7 @@ def main():
         res = extract_color_results(content)
         raw_data[stations[0]] = res
 
-    pprint.pprint(raw_data)
+    # pprint.pprint(raw_data)
 
     # Start analysis
     print('Info: Extracting unique color names over all stations')
@@ -181,12 +186,12 @@ def main():
     for station_name, res in raw_data.items():
         print('Results for station %s' % station_name)
         raw_data_part = {station_name: res}
-        res = eval_distance_per_color(raw_data)
-        for color_name, res in res.items():
-            cnt = res['cnt']
-            min = res['min']
-            max = res['max']
-            avg = res['avg']
+        res_part = eval_distance_per_color(raw_data_part)
+        for color_name, res_color in res_part.items():
+            cnt = res_color['cnt']
+            min = res_color['min']
+            max = res_color['max']
+            avg = res_color['avg']
             print('Color %-35s cnt: %2d min: %4d, avg: %4d, max: %4d' % (color_name, cnt, min, avg, max))
     print(80 * '*')
 
@@ -206,11 +211,11 @@ def main():
     for station_name, res in raw_data.items():
         print('Results for station %s' % station_name)
         raw_data_part = {station_name: res}
-        res = eval_ok_nok_undef(raw_data)
-        for color_name, res in res.items():
-            ok = res['ok']
-            nok = res['nok']
-            undef = res['undef']
+        res_part = eval_ok_nok_undef(raw_data_part)
+        for color_name, res_color in res_part.items():
+            ok = res_color['ok']
+            nok = res_color['nok']
+            undef = res_color['undef']
             cnt = ok + nok + undef
             print('Color %-35s cnt: %2d ok: %2d, nok: %4d, undef: %4d' % (color_name, cnt, ok, nok, undef))
     print(80 * '*')
