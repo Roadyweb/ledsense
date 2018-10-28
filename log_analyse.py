@@ -75,7 +75,7 @@ def extract_color_results(lines_list):
     return ret
 
 
-def extract_unique_color_names(raw_data):
+def eval_unique_color_names(raw_data):
     unique_colors = {}
     for station, station_results in raw_data.items():
         for result in station_results:
@@ -87,7 +87,7 @@ def extract_unique_color_names(raw_data):
     return unique_colors
 
 
-def extract_distance_per_color(raw_data):
+def eval_distance_per_color(raw_data):
     color_distances = {}
     for station, station_results in raw_data.items():
         for result in station_results:
@@ -111,6 +111,28 @@ def extract_distance_per_color(raw_data):
     return color_distances
 
 
+def eval_ok_nok_undef(raw_data):
+    color_ok_nok_undef = {}
+    for station, station_results in raw_data.items():
+        for result in station_results:
+            color_name = result['color_name']
+            color_res = result['result']
+            if color_name not in color_ok_nok_undef:
+                color_ok_nok_undef[color_name] = {}
+                color_ok_nok_undef[color_name]['ok'] = 0
+                color_ok_nok_undef[color_name]['nok'] = 0
+                color_ok_nok_undef[color_name]['undef'] = 0
+            if color_res == 'OK':
+                color_ok_nok_undef[color_name]['ok'] +=1
+            elif color_res == 'NOK':
+                color_ok_nok_undef[color_name]['nok'] += 1
+            elif color_res == '---':
+                color_ok_nok_undef[color_name]['undef'] += 1
+            else:
+                print('WARNING: Unexpected res %s, should be OK, NOK or ---' % color_res)
+    return color_ok_nok_undef
+
+
 def main():
     raw_data = {}
     fn_list = ['station1.log', 'station2.log', 'station12.log']
@@ -125,9 +147,11 @@ def main():
         res = extract_color_results(content)
         raw_data[stations[0]] = res
 
+    pprint.pprint(raw_data)
+
     # Start analysis
     print('Info: Extracting unique color names over all stations')
-    res = extract_unique_color_names(raw_data)
+    res = eval_unique_color_names(raw_data)
     pprint.pprint(res, width=120)
     print(80 * '*')
 
@@ -136,14 +160,13 @@ def main():
     # to reuse code we feed only per station data to the same function
     for station_name, res in raw_data.items():
         print('Results for station %s' % station_name)
-        raw_data_part = {}
-        raw_data_part[station_name] = res
-        res = extract_unique_color_names(raw_data)
+        raw_data_part = {station_name: res}
+        res = eval_unique_color_names(raw_data)
         pprint.pprint(res, width=120)
     print(80 * '*')
 
     print('Analysing deviation from configured rgb values over all stations')
-    res = extract_distance_per_color(raw_data)
+    res = eval_distance_per_color(raw_data)
     for color_name, res in res.items():
         cnt = res['cnt']
         min = res['min']
@@ -157,9 +180,8 @@ def main():
     # to reuse code we feed only per station data to the same function
     for station_name, res in raw_data.items():
         print('Results for station %s' % station_name)
-        raw_data_part = {}
-        raw_data_part[station_name] = res
-        res = extract_distance_per_color(raw_data)
+        raw_data_part = {station_name: res}
+        res = eval_distance_per_color(raw_data)
         for color_name, res in res.items():
             cnt = res['cnt']
             min = res['min']
@@ -168,7 +190,30 @@ def main():
             print('Color %-35s cnt: %2d min: %4d, avg: %4d, max: %4d' % (color_name, cnt, min, avg, max))
     print(80 * '*')
 
+    print('Analysing OKs, NOKs and undefs over all stations')
+    res = eval_ok_nok_undef(raw_data)
+    for color_name, res in res.items():
+        ok = res['ok']
+        nok = res['nok']
+        undef = res['undef']
+        cnt = ok + nok + undef
+        print('Color %-35s cnt: %2d ok: %2d, nok: %4d, undef: %4d' % (color_name, cnt, ok, nok, undef))
+    print(80 * '*')
 
+    print('Analysing OKs, NOKs and undefs per stations')
+    # Now do this per station
+    # to reuse code we feed only per station data to the same function
+    for station_name, res in raw_data.items():
+        print('Results for station %s' % station_name)
+        raw_data_part = {station_name: res}
+        res = eval_ok_nok_undef(raw_data)
+        for color_name, res in res.items():
+            ok = res['ok']
+            nok = res['nok']
+            undef = res['undef']
+            cnt = ok + nok + undef
+            print('Color %-35s cnt: %2d ok: %2d, nok: %4d, undef: %4d' % (color_name, cnt, ok, nok, undef))
+    print(80 * '*')
 
 
 if __name__ == '__main__':
