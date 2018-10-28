@@ -5,7 +5,7 @@
 
 Usage:
   led_sens.py app [CONFIG]
-  led_sens.py app2 [--eval] [CONFIG]
+  led_sens.py app2 [--eval] [-l logfile] [CONFIG]
   led_sens.py color analyse [CONFIG]
   led_sens.py detect [CONFIG]
   led_sens.py diff
@@ -17,6 +17,7 @@ Usage:
 
 Options:
   -e            Evaluate the detection result by pulling GPIO for OK (8) and NOK (11) to GND
+  -l logfile    Log addtionally to logfile
   -h --help     Show this screen.
   --version     Show version.
 
@@ -52,7 +53,18 @@ LED_TOGGLE_HOLDOFF = 0.060
 
 # LED_TOGGLE_HOLDOFF = 0.053
 
-logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', datefmt='%Y.%m.%d %H:%M:%S', level=logging.DEBUG)
+
+rootLogger = logging.getLogger()
+rootLogger.setLevel(logging.DEBUG)
+
+logFormatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s', '%Y.%m.%d %H:%M:%S')
+
+
+consoleHandler = logging.StreamHandler()
+consoleHandler.setFormatter(logFormatter)
+
+rootLogger.addHandler(consoleHandler)
+# logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', datefmt='%Y.%m.%d %H:%M:%S', level=logging.DEBUG)
 
 LOG_RGB_INT = 10  # seconds
 log_rgb_exit = False
@@ -265,7 +277,7 @@ def app2(config_det, config_rgb, config_color, map_station_mp3_color, eval=False
             detect_cube_removal(det_threshold)
             play_music.stop_playing = True
     except KeyboardInterrupt:
-        pass
+        pr('Keyboard interupt detected, Stopping threads ..')
 
     finally:
         play_music.exit_thread = True
@@ -493,7 +505,14 @@ def endprogram():
 
 def main():
     args = docopt(__doc__, version='LED Sensing')
-    prdbg(args)
+    # prdbg(args)
+
+    # Check if we want also to log to a file
+    if args['-l'] is not None:
+        fileHandler = logging.FileHandler(args['-l'])
+        fileHandler.setFormatter(logFormatter)
+        rootLogger.addHandler(fileHandler)
+
     config = load(args['CONFIG'])
     # pprint.pprint(config)
     setup(config['sensor'])
