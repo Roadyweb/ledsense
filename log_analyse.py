@@ -31,6 +31,7 @@ rawdata = {station_name1: [ {color_name: x, dist: y, rgb_meas: [r, g, b], rgb_co
 
 
 def unique_list_entries(some_list):
+    # a set can only contain unique elements
     return list(set(some_list))
 
 
@@ -78,6 +79,34 @@ def extract_color_results(lines_list):
             # print('No color result found in %s' % line)
             pass
     return ret
+
+
+def check_for_common_rgb_config(raw_data):
+    # dict for check rgb_config vs color_name
+    unique_rgb_config1 = {}
+    # dict for check color_name vs rgb_config
+    unique_rgb_config2 = {}
+    for station, station_results in raw_data.items():
+        for result in station_results:
+            rgb_config = result['rgb_config']
+            color_name = result['color_name']
+            if rgb_config not in unique_rgb_config1:
+                unique_rgb_config1[rgb_config] = color_name
+            else:
+                # Should happen not very often, that the same RGB configuration has different names
+                if unique_rgb_config1[rgb_config] != color_name:
+                    print('Warning: color names for rgb_config %s differ (%s vs %s)' %
+                          (rgb_config, unique_rgb_config1[rgb_config], color_name))
+                    return None
+            if color_name not in unique_rgb_config2:
+                unique_rgb_config2[color_name] = rgb_config
+            else:
+                # Should happen not very often, that the same RGB configuration has different names
+                if unique_rgb_config2[color_name] != rgb_config:
+                    print('Warning: rgb_config for color_name %s differ (%s vs %s)' %
+                          (color_name, unique_rgb_config2[color_name], rgb_config))
+                    return None
+    return unique_rgb_config1
 
 
 def eval_unique_color_names(raw_data):
@@ -140,16 +169,29 @@ def eval_ok_nok_undef(raw_data):
 
 def main():
     raw_data = {}
-    fn_list = ['station1.log', 'station2.log', 'station12.log', 'station3.log', 'station5.log', 'station35.log']
+    fn_list = ['station1.log', 'station1a.log', 'station1b.log', 'station2.log', 'station12.log', 'station3.log',
+               'station5.log', 'station35.log']
     for fn in fn_list:
         with open(fn, 'r') as file:
             content = file.readlines()
         content = clean_log(content)
         stations = extract_station(content)
         if len(stations) > 1:
-            print('Ignoring log file %s. Contains multiple station entries %s' % (fn, stations))
+            print('WARNUNG: Ignoring log file %s. Contains multiple station entries %s' % (fn, stations))
             continue
         res = extract_color_results(content)
+
+        print('Info: Checking for same rgb config')
+        # convert result to raw_data with only one station to be able to reuse func later
+        raw_data_part = {stations[0]: res}
+        res_rgb_config = check_for_common_rgb_config(raw_data_part)
+        if res_rgb_config is None:
+            print('WARNUNG: Ignoring log file %s. RGB config is redefined' % fn)
+            continue
+
+        pprint.pprint(res_rgb_config, width=120)
+        print(80 * '*')
+
         raw_data[stations[0]] = res
 
     # pprint.pprint(raw_data)
@@ -166,7 +208,7 @@ def main():
     for station_name, res in raw_data.items():
         print('Results for station %s' % station_name)
         raw_data_part = {station_name: res}
-        res = eval_unique_color_names(raw_data)
+        res = eval_unique_color_names(raw_data_part)
         pprint.pprint(res, width=120)
     print(80 * '*')
 
