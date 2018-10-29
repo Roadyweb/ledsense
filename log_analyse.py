@@ -81,31 +81,31 @@ def extract_color_results(lines_list):
     return ret
 
 
-def check_for_common_rgb_config(raw_data):
+def check_for_common_rgb_config(color_results):
     # dict for check rgb_config vs color_name
     unique_rgb_config1 = {}
     # dict for check color_name vs rgb_config
     unique_rgb_config2 = {}
-    for station, station_results in raw_data.items():
-        for result in station_results:
-            rgb_config = result['rgb_config']
-            color_name = result['color_name']
-            if rgb_config not in unique_rgb_config1:
-                unique_rgb_config1[rgb_config] = color_name
-            else:
-                # Should happen not very often, that the same RGB configuration has different names
-                if unique_rgb_config1[rgb_config] != color_name:
-                    print('Warning: color names for rgb_config %s differ (%s vs %s)' %
-                          (rgb_config, unique_rgb_config1[rgb_config], color_name))
-                    return None
-            if color_name not in unique_rgb_config2:
-                unique_rgb_config2[color_name] = rgb_config
-            else:
-                # Should happen not very often, that the same RGB configuration has different names
-                if unique_rgb_config2[color_name] != rgb_config:
-                    print('Warning: rgb_config for color_name %s differ (%s vs %s)' %
-                          (color_name, unique_rgb_config2[color_name], rgb_config))
-                    return None
+    for color_result in color_results:
+        # pprint.pprint(color_result)
+        rgb_config = color_result['rgb_config']
+        color_name = color_result['color_name']
+        if rgb_config not in unique_rgb_config1:
+            unique_rgb_config1[rgb_config] = color_name
+        else:
+            # Should happen not very often, that the same RGB configuration has different names
+            if unique_rgb_config1[rgb_config] != color_name:
+                print('Warning: color names for rgb_config %s differ (%s vs %s)' %
+                      (rgb_config, unique_rgb_config1[rgb_config], color_name))
+                return None
+        if color_name not in unique_rgb_config2:
+            unique_rgb_config2[color_name] = rgb_config
+        else:
+            # Should happen not very often, that the same RGB configuration has different names
+            if unique_rgb_config2[color_name] != rgb_config:
+                print('Warning: rgb_config for color_name %s differ (%s vs %s)' %
+                      (color_name, unique_rgb_config2[color_name], rgb_config))
+                return None
     return unique_rgb_config1
 
 
@@ -169,6 +169,7 @@ def eval_ok_nok_undef(raw_data):
 
 def main():
     raw_data = {}
+    raw_rgb_config_data = {}
     fn_list = ['station1.log', 'station1a.log', 'station1b.log', 'station2.log', 'station12.log', 'station3.log',
                'station5.log', 'station35.log']
     for fn in fn_list:
@@ -183,8 +184,7 @@ def main():
 
         print('Info: Checking for same rgb config')
         # convert result to raw_data with only one station to be able to reuse func later
-        raw_data_part = {stations[0]: res}
-        res_rgb_config = check_for_common_rgb_config(raw_data_part)
+        res_rgb_config = check_for_common_rgb_config(res)
         if res_rgb_config is None:
             print('WARNUNG: Ignoring log file %s. RGB config is redefined' % fn)
             continue
@@ -193,6 +193,7 @@ def main():
         print(80 * '*')
 
         raw_data[stations[0]] = res
+        raw_rgb_config_data[stations[0]] = res_rgb_config
 
     # pprint.pprint(raw_data)
 
