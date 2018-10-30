@@ -6,6 +6,8 @@ import numpy
 import pprint
 import re
 
+import config
+
 REGEX_RGBC = r'[\d\.\:\s]*INFO\sRGBC.*'
 
 REGEX_STATION = r'[\d\.\:\s]*INFO\sFound\sstation\:\s(\w)*'
@@ -111,12 +113,15 @@ def check_for_common_rgb_config(color_results):
 
 def check_for_common_rgb_config_over_raw_data(raw_rgb_config_data):
     rgb_configs = {}
+    color_names = []
     for station, station_results in raw_rgb_config_data.items():
         # convert station_results to list, later to set
         rgb_config_color_name_list = []
         for rgb_config, color_name in station_results.items():
             rgb_config_color_name_list.append(color_name + ' ' + rgb_config)
+            color_names.append(color_name)
         rgb_configs[station] = set(rgb_config_color_name_list)
+    color_names_unique = unique_list_entries(color_names)
 
     # pprint.pprint(rgb_configs)
 
@@ -139,8 +144,8 @@ def check_for_common_rgb_config_over_raw_data(raw_rgb_config_data):
             for missing in missing_set:
                 print('   RGB Config: %s' % missing)
         else:
-            print('For station %s nothing is missing hooray')
-
+            print('For station %s nothing is missing hooray' % station)
+    return color_names_unique
 
 
 def eval_unique_color_names(raw_data):
@@ -155,12 +160,17 @@ def eval_unique_color_names(raw_data):
     return unique_colors
 
 
-def eval_distance_per_color(raw_data):
+def eval_distance_per_color(raw_data, ignore_nok=False, ignore_undef=False):
     color_distances = {}
     for station, station_results in raw_data.items():
         for result in station_results:
             color_name = result['color_name']
             color_dist = result['dist']
+            ok_nok_undef = result['result']
+            if ignore_nok and ok_nok_undef == config.STR_NOK:
+                continue
+            if ignore_undef and ok_nok_undef == config.STR_UNDEF:
+                continue
             if color_name not in color_distances:
                 color_distances[color_name] = {}
                 color_distances[color_name]['values'] = [color_dist]
@@ -235,7 +245,7 @@ def main():
 
     print(80 * '*')
     print('Checking RGB config consistency over all logs')
-    check_for_common_rgb_config_over_raw_data(raw_rgb_config_data)
+    color_names_unique = check_for_common_rgb_config_over_raw_data(raw_rgb_config_data)
 
     # Start analysis
     print(80 * '*')
@@ -256,6 +266,31 @@ def main():
         print('Results for station %s' % station_name)
         raw_data_part = {station_name: res}
         res_part = eval_distance_per_color(raw_data_part)
+        for color_name, res_color in res_part.items():
+            cnt = res_color['cnt']
+            min = res_color['min']
+            max = res_color['max']
+            avg = res_color['avg']
+            print('Color %-35s cnt: %2d min: %4d, avg: %4d, max: %4d' % (color_name, cnt, min, avg, max))
+
+    print(80 * '*')
+    print('Analysing deviation from configured rgb values over all stations, ignore NOK and UNDEF')
+    res = eval_distance_per_color(raw_data, ignore_nok=True, ignore_undef=True)
+    for color_name, res in res.items():
+        cnt = res['cnt']
+        min = res['min']
+        max = res['max']
+        avg = res['avg']
+        print('Color %-35s cnt: %2d min: %4d, avg: %4d, max: %4d' % (color_name, cnt, min, avg, max))
+
+    print(80 * '*')
+    print('Analysing deviation from configured rgb values per stations, ignore NOK and UNDEF')
+    # Now do this per station
+    # to reuse code we feed only per station data to the same function
+    for station_name, res in raw_data.items():
+        print('Results for station %s' % station_name)
+        raw_data_part = {station_name: res}
+        res_part = eval_distance_per_color(raw_data_part, ignore_nok=True, ignore_undef=True)
         for color_name, res_color in res_part.items():
             cnt = res_color['cnt']
             min = res_color['min']

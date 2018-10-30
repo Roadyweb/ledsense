@@ -38,7 +38,7 @@ from docopt import docopt
 # import pydevd; pydevd.settrace('192.168.178.80')
 import play_music
 from config import save_default, load, check_color_vs_map_color_mp3, check_map_color_mp3_vs_color, \
-    check_mp3_files, UndefinedStation, get_station
+    check_mp3_files, UndefinedStation, get_station, STR_NOK, STR_OK, STR_UNDEF
 from helper import DrawDiagram, get_rgb_distance, get_rgb_length, pr, prdbg, prerr
 
 GPIO_LED = 4
@@ -185,7 +185,7 @@ def get_color(rgb, colors, max_rgb_dist, eval):
             min_dist = dist
             match = color
 
-    eval_res = '---'
+    eval_res = STR_UNDEF
     if eval:
         pr('Is color %s correct? Press OK or NOK key' % match[0])
         # Wait till key is pressed
@@ -195,9 +195,9 @@ def get_color(rgb, colors, max_rgb_dist, eval):
             if ok == 0 or nok == 0:
                 break
         if ok == 0:
-            eval_res = 'OK'
+            eval_res = STR_OK
         elif nok == 0:
-            eval_res = 'NOK'
+            eval_res = STR_OK
 
     pr('Found %-15s - Dist %d - Cur. RGB: %-20s RGB %-20s %s' %
        (match[0], min_dist, str(rgb), str(match[1]), eval_res))
