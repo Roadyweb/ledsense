@@ -246,17 +246,13 @@ def main():
     print(80 * '*')
     print('Checking RGB config consistency over all logs')
     color_names_unique = check_for_common_rgb_config_over_raw_data(raw_rgb_config_data)
+    color_names_unique = sorted(color_names_unique)
 
     # Start analysis
     print(80 * '*')
     print('Analysing deviation from configured rgb values over all stations')
     res = eval_distance_per_color(raw_data)
-    for color_name, res in res.items():
-        cnt = res['cnt']
-        min = res['min']
-        max = res['max']
-        avg = res['avg']
-        print('Color %-35s cnt: %2d min: %4d, avg: %4d, max: %4d' % (color_name, cnt, min, avg, max))
+    print_min_avg_max(color_names_unique, res)
 
     print(80 * '*')
     print('Analysing deviation from configured rgb values per stations')
@@ -266,22 +262,12 @@ def main():
         print('Results for station %s' % station_name)
         raw_data_part = {station_name: res}
         res_part = eval_distance_per_color(raw_data_part)
-        for color_name, res_color in res_part.items():
-            cnt = res_color['cnt']
-            min = res_color['min']
-            max = res_color['max']
-            avg = res_color['avg']
-            print('Color %-35s cnt: %2d min: %4d, avg: %4d, max: %4d' % (color_name, cnt, min, avg, max))
+        print_min_avg_max(color_names_unique, res_part)
 
     print(80 * '*')
     print('Analysing deviation from configured rgb values over all stations, ignore NOK and UNDEF')
     res = eval_distance_per_color(raw_data, ignore_nok=True, ignore_undef=True)
-    for color_name, res in res.items():
-        cnt = res['cnt']
-        min = res['min']
-        max = res['max']
-        avg = res['avg']
-        print('Color %-35s cnt: %2d min: %4d, avg: %4d, max: %4d' % (color_name, cnt, min, avg, max))
+    print_min_avg_max(color_names_unique, res)
 
     print(80 * '*')
     print('Analysing deviation from configured rgb values per stations, ignore NOK and UNDEF')
@@ -291,22 +277,12 @@ def main():
         print('Results for station %s' % station_name)
         raw_data_part = {station_name: res}
         res_part = eval_distance_per_color(raw_data_part, ignore_nok=True, ignore_undef=True)
-        for color_name, res_color in res_part.items():
-            cnt = res_color['cnt']
-            min = res_color['min']
-            max = res_color['max']
-            avg = res_color['avg']
-            print('Color %-35s cnt: %2d min: %4d, avg: %4d, max: %4d' % (color_name, cnt, min, avg, max))
+        print_min_avg_max(color_names_unique, res_part)
 
     print(80 * '*')
     print('Analysing OKs, NOKs and undefs over all stations')
     res = eval_ok_nok_undef(raw_data)
-    for color_name, res in res.items():
-        ok = res['ok']
-        nok = res['nok']
-        undef = res['undef']
-        cnt = ok + nok + undef
-        print('Color %-35s cnt: %2d ok: %2d, nok: %4d, undef: %4d' % (color_name, cnt, ok, nok, undef))
+    print_ok_nok_undef(color_names_unique, res)
 
     print(80 * '*')
     print('Analysing OKs, NOKs and undefs per stations')
@@ -316,14 +292,33 @@ def main():
         print('Results for station %s' % station_name)
         raw_data_part = {station_name: res}
         res_part = eval_ok_nok_undef(raw_data_part)
-        for color_name, res_color in res_part.items():
-            ok = res_color['ok']
-            nok = res_color['nok']
-            undef = res_color['undef']
-            cnt = ok + nok + undef
-            print('Color %-35s cnt: %2d ok: %2d, nok: %4d, undef: %4d' % (color_name, cnt, ok, nok, undef))
+        print_ok_nok_undef(color_names_unique, res_part)
 
     print(80 * '*')
+
+
+def print_min_avg_max(color_names_unique, res):
+    for color_name in color_names_unique:
+        if color_name in res:
+            cnt = res[color_name]['cnt']
+            min = res[color_name]['min']
+            max = res[color_name]['max']
+            avg = res[color_name]['avg']
+            print('Color %-35s cnt: %2d min: %4d, avg: %4d, max: %4d' % (color_name, cnt, min, avg, max))
+        else:
+            print('Color %-35s not available' % color_name)
+
+
+def print_ok_nok_undef(color_names_unique, res):
+    for color_name in color_names_unique:
+        if color_name in res:
+            ok = res[color_name]['ok']
+            nok = res[color_name]['nok']
+            undef = res[color_name]['undef']
+            cnt = ok + nok + undef
+            print('Color %-35s cnt: %2d ok: %2d, nok: %4d, undef: %4d' % (color_name, cnt, ok, nok, undef))
+        else:
+            print('Color %-35s not available' % color_name)
 
 
 if __name__ == '__main__':
