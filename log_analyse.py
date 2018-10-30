@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+import copy
 import numpy
 import pprint
 import re
@@ -28,7 +29,6 @@ rawdata = {station_name1: [ {color_name: x, dist: y, rgb_meas: [r, g, b], rgb_co
           ...
           }
 '''
-
 
 def unique_list_entries(some_list):
     # a set can only contain unique elements
@@ -109,6 +109,40 @@ def check_for_common_rgb_config(color_results):
     return unique_rgb_config1
 
 
+def check_for_common_rgb_config_over_raw_data(raw_rgb_config_data):
+    rgb_configs = {}
+    for station, station_results in raw_rgb_config_data.items():
+        # convert station_results to list, later to set
+        rgb_config_color_name_list = []
+        for rgb_config, color_name in station_results.items():
+            rgb_config_color_name_list.append(color_name + ' ' + rgb_config)
+        rgb_configs[station] = set(rgb_config_color_name_list)
+
+    # pprint.pprint(rgb_configs)
+
+    # Find a union set of rgb configs over all stations
+    union_set = set()
+    for station, rgb_config_color_name in rgb_configs.items():
+        union_set = union_set.union(rgb_config_color_name)
+
+    # Find intersection
+    inter_set = copy.deepcopy(union_set)
+    for station, rgb_config_color_name in rgb_configs.items():
+        inter_set = inter_set.intersection(rgb_config_color_name)
+
+    print('Found %d different RGB config. %d were common to all logs' % (len(union_set), len(inter_set)))
+
+    for station, rgb_config_color_name in rgb_configs.items():
+        missing_set = union_set.difference(rgb_config_color_name)
+        if len(missing_set) > 0:
+            print('For station %s are missing:' % station)
+            for missing in missing_set:
+                print('   RGB Config: %s' % missing)
+        else:
+            print('For station %s nothing is missing hooray')
+
+
+
 def eval_unique_color_names(raw_data):
     unique_colors = {}
     for station, station_results in raw_data.items():
@@ -171,48 +205,40 @@ def main():
     raw_data = {}
     raw_rgb_config_data = {}
     fn_list = ['station1.log', 'station1a.log', 'station1b.log', 'station2.log', 'station12.log', 'station3.log',
-               'station5.log', 'station35.log']
+               'station4.log', 'station5.log', 'station35.log']
     for fn in fn_list:
         with open(fn, 'r') as file:
             content = file.readlines()
-        content = clean_log(content)
+        print(80 * '*')
+        print('Analysing logfile %s' % fn)
+        # content = clean_log(content)
         stations = extract_station(content)
         if len(stations) > 1:
             print('WARNUNG: Ignoring log file %s. Contains multiple station entries %s' % (fn, stations))
             continue
         res = extract_color_results(content)
 
-        print('Info: Checking for same rgb config')
         # convert result to raw_data with only one station to be able to reuse func later
         res_rgb_config = check_for_common_rgb_config(res)
         if res_rgb_config is None:
             print('WARNUNG: Ignoring log file %s. RGB config is redefined' % fn)
             continue
 
-        pprint.pprint(res_rgb_config, width=120)
-        print(80 * '*')
+        # pprint.pprint(res_rgb_config, width=120)
+
+        print('Logfile %s OK' % fn)
 
         raw_data[stations[0]] = res
         raw_rgb_config_data[stations[0]] = res_rgb_config
 
     # pprint.pprint(raw_data)
 
+    print(80 * '*')
+    print('Checking RGB config consistency over all logs')
+    check_for_common_rgb_config_over_raw_data(raw_rgb_config_data)
+
     # Start analysis
-    print('Info: Extracting unique color names over all stations')
-    res = eval_unique_color_names(raw_data)
-    pprint.pprint(res, width=120)
     print(80 * '*')
-
-    print('Info: Extracting unique color names per station')
-    # Now do this per station
-    # to reuse code we feed only per station data to the same function
-    for station_name, res in raw_data.items():
-        print('Results for station %s' % station_name)
-        raw_data_part = {station_name: res}
-        res = eval_unique_color_names(raw_data_part)
-        pprint.pprint(res, width=120)
-    print(80 * '*')
-
     print('Analysing deviation from configured rgb values over all stations')
     res = eval_distance_per_color(raw_data)
     for color_name, res in res.items():
@@ -221,8 +247,8 @@ def main():
         max = res['max']
         avg = res['avg']
         print('Color %-35s cnt: %2d min: %4d, avg: %4d, max: %4d' % (color_name, cnt, min, avg, max))
-    print(80 * '*')
 
+    print(80 * '*')
     print('Analysing deviation from configured rgb values per stations')
     # Now do this per station
     # to reuse code we feed only per station data to the same function
@@ -236,8 +262,8 @@ def main():
             max = res_color['max']
             avg = res_color['avg']
             print('Color %-35s cnt: %2d min: %4d, avg: %4d, max: %4d' % (color_name, cnt, min, avg, max))
-    print(80 * '*')
 
+    print(80 * '*')
     print('Analysing OKs, NOKs and undefs over all stations')
     res = eval_ok_nok_undef(raw_data)
     for color_name, res in res.items():
@@ -246,8 +272,8 @@ def main():
         undef = res['undef']
         cnt = ok + nok + undef
         print('Color %-35s cnt: %2d ok: %2d, nok: %4d, undef: %4d' % (color_name, cnt, ok, nok, undef))
-    print(80 * '*')
 
+    print(80 * '*')
     print('Analysing OKs, NOKs and undefs per stations')
     # Now do this per station
     # to reuse code we feed only per station data to the same function
@@ -261,6 +287,7 @@ def main():
             undef = res_color['undef']
             cnt = ok + nok + undef
             print('Color %-35s cnt: %2d ok: %2d, nok: %4d, undef: %4d' % (color_name, cnt, ok, nok, undef))
+
     print(80 * '*')
 
 
