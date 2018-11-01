@@ -44,7 +44,7 @@ from docopt import docopt
 import play_music
 from config import save_default, load, check_color_vs_map_color_mp3, check_map_color_mp3_vs_color, \
     check_mp3_files, UndefinedStation, get_station, STR_NOK, STR_OK, STR_UNDEF
-from helper import DrawDiagram, get_rgb_distance, get_rgb_length, pr, prdbg, prerr
+from helper import DrawDiagram, get_rgb_distance, get_rgb_length, pr, prdbg, prerr, prwarn
 
 GPIO_LED = 4
 GPIO_NOK = 11
@@ -306,28 +306,53 @@ def cal(config_det, config_rgb, config_color, cnt):
     except UndefinedStation as e:
         prerr('UndefinedStationError: %s . Exiting ...' % e)
         return
+
     res = {}
+    # Init dict
     for color_name, config_rgb in config_color:
         res[color_name] = {}
         res[color_name]['config'] = config_rgb
         res[color_name]['values'] = []
         res[color_name]['mean'] = [0, 0, 0]
+        res[color_name]['std'] = [0, 0, 0]
 
+    # Do calibration loop
+    first_run = True
+    last_color_rgb = [0, 0, 0]
     for color_name, config_rgb in config_color:
+        color_changed = False
+        print('Put color %s on detector' % color_name)
         for cycle in range(cnt):
-            print('Put color %s on detector' % color_name)
-            detect_cube(det_threshold)
-            led_on()
-            rgb = get_stable_rgb(rgb_stable_cnt, rgb_stable_dist)
+            while 42:
+                detect_cube(det_threshold)
+                led_on()
+                rgb = get_stable_rgb(rgb_stable_cnt, rgb_stable_dist)
+                pr('Remove cube')
+                detect_cube_removal(det_threshold)
+
+                # Check if the cube color has really changed
+                dist_last_rgb = get_rgb_distance(last_color_rgb, rgb)
+                print(dist_last_rgb)
+                if first_run:
+                    first_run = False
+                    color_changed = True
+                    break
+                if color_changed:
+                    break
+                # TODO: Adjust threshold
+                if dist_last_rgb > 300:
+                    color_changed = True
+                    break
+                prwarn('Please use the correct color %s, it seems you still using the old one' % color_name)
+
             dist_config = get_rgb_distance(config_rgb, rgb)
             dist_mean = get_rgb_distance(res[color_name]['mean'], rgb)
             res[color_name]['values'].append(rgb)
             res[color_name]['mean'] = list(numpy.median(res[color_name]['values'], axis=0).astype(int))
             res[color_name]['std'] = list(numpy.std(res[color_name]['values'], axis=0).astype(int))
-            # pprint.pprint(res)
             pr('%-15s Distances: Config %d, Mean %d' %
                (color_name, dist_config, dist_mean))
-            detect_cube_removal(det_threshold)
+        last_color_rgb = res[color_name]['mean']
 
     # Eval result
     for color_name, config_rgb in config_color:
