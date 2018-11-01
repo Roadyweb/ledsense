@@ -360,13 +360,15 @@ def cal(config_det, config_rgb, config_color, cnt):
         mean_rgb = res[color_name]['mean']
         dist = get_rgb_distance(config_rgb, mean_rgb)
         std = int(numpy.linalg.norm(res[color_name]['std']))
-        print('%-30s Distances: Config-Mean %4d, Std %4s' %
+        print('%-35s Distances: Config-Mean %4d, Std %4s' %
            (color_name, dist,  str(std)))
 
     # Print YAML file
     res_yaml = []
-    for color_name in res:
+    for color_name, _ in config_color:
         rgb = list(res[color_name]['mean'])
+
+        # Convert numpy data types to int
         rgb_clean = []
         for i in rgb:
             rgb_clean.append(int(i))
