@@ -6,6 +6,7 @@
 Usage:
   led_sens.py app [CONFIG]
   led_sens.py app2 [--eval] [-l logfile] [CONFIG]
+  led_sens.py cal [-c count] [CONFIG]
   led_sens.py color analyse [CONFIG]
   led_sens.py detect [CONFIG]
   led_sens.py diff
@@ -16,6 +17,7 @@ Usage:
   led_sens.py test_speed
 
 Options:
+  -c count      Number of calibration cycles [default: 1]
   -e            Evaluate the detection result by pulling GPIO for OK (8) and NOK (11) to GND
   -l logfile    Log addtionally to logfile
   -h --help     Show this screen.
@@ -29,8 +31,11 @@ import copy
 import datetime
 import logging
 import numpy
+import pprint
 import time
 import threading
+import yaml
+
 
 from docopt import docopt
 
@@ -237,7 +242,7 @@ def app2(config_det, config_rgb, config_color, map_station_mp3_color, eval=False
     rgb_stable_dist = config_rgb['stable_dist']
     rgb_max_dist = config_rgb['max_dist']
     pr('Starting with detection threshold: %d' % det_threshold)
-    pr('Strating color detection with stable count: %d, stable_dist: %d using max distance: %d' %
+    pr('Starting color detection with stable count: %d, stable_dist: %d using max distance: %d' %
        (rgb_stable_cnt, rgb_stable_dist, rgb_max_dist))
 
     check_color_vs_map_color_mp3(config_color, map_station_mp3_color)
@@ -284,6 +289,66 @@ def app2(config_det, config_rgb, config_color, map_station_mp3_color, eval=False
         log_rgb_exit = True
         pm.join(3)
         rgb_log.join(3)
+
+
+def cal(config_det, config_rgb, config_color, cnt):
+    det_threshold = config_det['threshold']
+    rgb_stable_cnt = config_rgb['stable_cnt']
+    rgb_stable_dist = config_rgb['stable_dist']
+    rgb_max_dist = config_rgb['max_dist']
+    cnt = int(cnt)
+    pr('Starting with detection threshold: %d' % det_threshold)
+    pr('Starting color detection with stable count: %d, stable_dist: %d using max distance: %d' %
+       (rgb_stable_cnt, rgb_stable_dist, rgb_max_dist))
+
+    try:
+        station = get_station()
+    except UndefinedStation as e:
+        prerr('UndefinedStationError: %s . Exiting ...' % e)
+        return
+    res = {}
+    for color_name, config_rgb in config_color:
+        res[color_name] = {}
+        res[color_name]['config'] = config_rgb
+        res[color_name]['values'] = []
+        res[color_name]['mean'] = [0, 0, 0]
+
+    for color_name, config_rgb in config_color:
+        for cycle in range(cnt):
+            print('Put color %s on detector' % color_name)
+            detect_cube(det_threshold)
+            led_on()
+            rgb = get_stable_rgb(rgb_stable_cnt, rgb_stable_dist)
+            dist_config = get_rgb_distance(config_rgb, rgb)
+            dist_mean = get_rgb_distance(res[color_name]['mean'], rgb)
+            res[color_name]['values'].append(rgb)
+            res[color_name]['mean'] = list(numpy.median(res[color_name]['values'], axis=0).astype(int))
+            res[color_name]['std'] = list(numpy.std(res[color_name]['values'], axis=0).astype(int))
+            # pprint.pprint(res)
+            pr('%-15s Distances: Config %d, Mean %d' %
+               (color_name, dist_config, dist_mean))
+            detect_cube_removal(det_threshold)
+
+    # Eval result
+    for color_name, config_rgb in config_color:
+        config_rgb = res[color_name]['config']
+        mean_rgb = res[color_name]['mean']
+        dist = get_rgb_distance(config_rgb, mean_rgb)
+        std = int(numpy.linalg.norm(res[color_name]['std']))
+        print('%-30s Distances: Config-Mean %4d, Std %4s' %
+           (color_name, dist,  str(std)))
+
+    # Print YAML file
+    res_yaml = []
+    for color_name in res:
+        rgb = list(res[color_name]['mean'])
+        rgb_clean = []
+        for i in rgb:
+            rgb_clean.append(int(i))
+        res_yaml.append([color_name, rgb_clean])
+    print(80 * '*')
+    print('Printing YAML config')
+    print(yaml.dump(res_yaml))
 
 
 def color_analyse(config_color):
@@ -522,6 +587,8 @@ def main():
             app(config['det'], config['rgb'], config['color'])
         elif args['app2']:
             app2(config['det'], config['rgb'], config['color'], config['map_station_mp3_color'], args['--eval'])
+        elif args['cal']:
+            cal(config['det'], config['rgb'], config['color'], args['-c'])
         elif args['color'] == True and args['analyse'] == True:
             color_analyse(config['color'])
         elif args['detect']:
