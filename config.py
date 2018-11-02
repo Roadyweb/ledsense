@@ -10,10 +10,6 @@ import RPi.GPIO as GPIO
 
 from helper import pr, prdbg, prwarn
 
-STR_OK = 'OK'
-STR_NOK = 'NOK'
-STR_UNDEF = '---'
-
 DEF_CONFIG_FN = 'config_default.yaml'
 DEF_DESCRIPTION = 'DEFAULT DESCRIPTION'
 DEF_DET_THRESHOLD = 2
