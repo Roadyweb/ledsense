@@ -32,6 +32,7 @@ rawdata = {station_name1: [ {color_name: x, dist: y, rgb_meas: [r, g, b], rgb_co
           }
 '''
 
+
 def unique_list_entries(some_list):
     # a set can only contain unique elements
     return list(set(some_list))
@@ -41,8 +42,8 @@ def clean_log(lines_list):
     ret = []
     for line in lines_list:
         line = line.replace('\n', '')
-        matchObj = re.search(REGEX_RGBC, line, re.S)
-        if not matchObj:
+        matchobj = re.search(REGEX_RGBC, line, re.S)
+        if not matchobj:
             ret.append(line)
         else:
             # print('Removing line: %s' % line)
@@ -56,9 +57,9 @@ def extract_station(lines_list):
     station_list = []
     # First extract all the station numbers
     for line in lines_list:
-        matchObj = re.search(REGEX_STATION, line, re.S)
-        if matchObj:
-            station_list.append(int(matchObj.group(1)))
+        matchobj = re.search(REGEX_STATION, line, re.S)
+        if matchobj:
+            station_list.append(int(matchobj.group(1)))
     # Now check that the station number is unique
     unique_station_list = unique_list_entries(station_list)
     # print(unique_station_list)
@@ -68,7 +69,7 @@ def extract_station(lines_list):
 def extract_color_results(lines_list):
     ret = []
     for line in lines_list:
-        matchObj = re.search(REGEX_COLOR, line, re.S)
+        matchobj = re.search(REGEX_COLOR, line, re.S)
         res = {}
         if matchObj:
             res['color_name'] = str(matchObj.group(1))

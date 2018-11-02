@@ -298,16 +298,16 @@ def check_valid_mp3_content(path):
     ret = ret.decode("utf-8")
     # print(ret)
     PATTERN = r'bitrate\s*(\w*).*samplerate\s*(\w*).*frames\s*(\w*).*time\s*([\w\:\.]*).*unidentified\s*([^\n]*).*errors\s*([^\n]*).*result\s*(\w*)'
-    matchObj = re.search(PATTERN, ret, re.S)
+    matchobj = re.search(PATTERN, ret, re.S)
     res = {}
-    if matchObj:
-        res['bitrate'] = matchObj.group(1)
-        res['samplerate'] = matchObj.group(2)
-        res['frames'] = matchObj.group(3)
-        res['time'] = matchObj.group(4)
-        res['unidentified'] = matchObj.group(5)
-        res['errors'] = matchObj.group(6)
-        res['result'] = matchObj.group(7)
+    if matchobj:
+        res['bitrate'] = matchobj.group(1)
+        res['samplerate'] = matchobj.group(2)
+        res['frames'] = matchobj.group(3)
+        res['time'] = matchobj.group(4)
+        res['unidentified'] = matchobj.group(5)
+        res['errors'] = matchobj.group(6)
+        res['result'] = matchobj.group(7)
     # print(res)
     return res
 

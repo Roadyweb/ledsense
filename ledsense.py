@@ -25,25 +25,23 @@ Options:
 
 """
 
-import RPi.GPIO as GPIO
-import TCS34725
 import copy
 import datetime
 import logging
-import numpy
-import pprint
-import time
 import threading
+import time
+
+import RPi.GPIO as GPIO
+import numpy
 import yaml
-
-
 from docopt import docopt
 
+import TCS34725
 # Uncomment to remote debug
 # import pydevd; pydevd.settrace('192.168.178.80')
 import play_music
 from config import save_default, load, check_color_vs_map_color_mp3, check_map_color_mp3_vs_color, \
-    check_mp3_files, UndefinedStation, get_station, STR_NOK, STR_OK, STR_UNDEF
+    check_mp3_files, UndefinedStation, get_station, STR_OK, STR_UNDEF
 from helper import DrawDiagram, get_rgb_distance, get_rgb_length, pr, prdbg, prerr, prwarn
 
 GPIO_LED = 4
@@ -58,18 +56,17 @@ LED_TOGGLE_HOLDOFF = 0.060
 
 # LED_TOGGLE_HOLDOFF = 0.053
 
-
+# Setup logging
 rootLogger = logging.getLogger()
 rootLogger.setLevel(logging.DEBUG)
 
 logFormatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s', '%Y.%m.%d %H:%M:%S')
 
-
 consoleHandler = logging.StreamHandler()
 consoleHandler.setFormatter(logFormatter)
 
 rootLogger.addHandler(consoleHandler)
-# logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', datefmt='%Y.%m.%d %H:%M:%S', level=logging.DEBUG)
+
 
 LOG_RGB_INT = 10  # seconds
 log_rgb_exit = False
@@ -282,7 +279,7 @@ def app2(config_det, config_rgb, config_color, map_station_mp3_color, eval=False
             detect_cube_removal(det_threshold)
             play_music.stop_playing = True
     except KeyboardInterrupt:
-        pr('Keyboard interupt detected, Stopping threads ..')
+        pr('Keyboard interrupt detected, Stopping threads ..')
 
     finally:
         play_music.exit_thread = True
@@ -361,7 +358,7 @@ def cal(config_det, config_rgb, config_color, cnt):
         dist = get_rgb_distance(config_rgb, mean_rgb)
         std = int(numpy.linalg.norm(res[color_name]['std']))
         print('%-35s Distances: Config-Mean %4d, Std %4s' %
-           (color_name, dist,  str(std)))
+              (color_name, dist, str(std)))
 
     # Print YAML file
     res_yaml = []
@@ -504,10 +501,6 @@ def meas(conf_led_on, toggle):
         pr('R: %5d G: %5d B: %5d C: %5d' % (r, g, b, c))
 
 
-def play():
-    pass
-
-
 def rgb_stable(config_rgb):
     rgb_stable_cnt = config_rgb['stable_cnt']
     rgb_stable_dist = config_rgb['stable_dist']
@@ -601,9 +594,9 @@ def main():
 
     # Check if we want also to log to a file
     if args['-l'] is not None:
-        fileHandler = logging.FileHandler(args['-l'])
-        fileHandler.setFormatter(logFormatter)
-        rootLogger.addHandler(fileHandler)
+        filehandler = logging.FileHandler(args['-l'])
+        filehandler.setFormatter(logFormatter)
+        rootLogger.addHandler(filehandler)
 
     config = load(args['CONFIG'])
     # pprint.pprint(config)
@@ -616,7 +609,7 @@ def main():
             app2(config['det'], config['rgb'], config['color'], config['map_station_mp3_color'], args['--eval'])
         elif args['cal']:
             cal(config['det'], config['rgb'], config['color'], args['-c'])
-        elif args['color'] == True and args['analyse'] == True:
+        elif args['color'] and args['analyse']:
             color_analyse(config['color'])
         elif args['detect']:
             detect(config['det'])
@@ -624,9 +617,7 @@ def main():
             diff()
         elif args['meas']:
             meas(args['on'], args['toggle'])
-        elif args['play']:
-            play()
-        elif args['rgb'] == True and args['stable'] == True:
+        elif args['rgb'] and args['stable']:
             rgb_stable(config['rgb'])
         elif args['save_default']:
             save_default()
