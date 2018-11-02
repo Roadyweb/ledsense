@@ -87,7 +87,7 @@ def get_rgb_distance(rgb1, rgb2):
 def get_rgb_length(rgb):
     """ This function expects one tuples with RGB values and calculates the length of the vector.
     """
-    return numpy.linalg.norm(rgb)
+    return numpy.linalg.norm(rgb).astype(int)
 
 
 def pr(str2log):

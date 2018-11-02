@@ -6,7 +6,7 @@
 Usage:
   led_sens.py app [CONFIG]
   led_sens.py app2 [--eval] [-l logfile] [CONFIG]
-  led_sens.py cal [-c count] [CONFIG]
+  led_sens.py cal [-c count] [-l logfile] [CONFIG]
   led_sens.py color analyse [CONFIG]
   led_sens.py detect [CONFIG]
   led_sens.py diff
@@ -288,7 +288,7 @@ def app2(config_det, config_rgb, config_color, map_station_mp3_color, eval=False
         rgb_log.join(3)
 
 
-def cal(config_det, config_rgb, config_color, cnt):
+def cal(config_det, config_rgb, config_color, config_sensor, cnt):
     det_threshold = config_det['threshold']
     rgb_stable_cnt = config_rgb['stable_cnt']
     rgb_stable_dist = config_rgb['stable_dist']
@@ -329,7 +329,6 @@ def cal(config_det, config_rgb, config_color, cnt):
 
                 # Check if the cube color has really changed
                 dist_last_rgb = get_rgb_distance(last_color_rgb, rgb)
-                print(dist_last_rgb)
                 if first_run:
                     first_run = False
                     color_changed = True
@@ -340,7 +339,8 @@ def cal(config_det, config_rgb, config_color, cnt):
                 if dist_last_rgb > 300:
                     color_changed = True
                     break
-                prwarn('Please use the correct color %s, it seems you still using the old one' % color_name)
+                prwarn('Please use the correct color %s, it seems you still using the old one. Dist: %d' %
+                       (color_name, dist_last_rgb))
 
             dist_config = get_rgb_distance(config_rgb, rgb)
             dist_mean = get_rgb_distance(res[color_name]['mean'], rgb)
@@ -357,7 +357,7 @@ def cal(config_det, config_rgb, config_color, cnt):
         mean_rgb = res[color_name]['mean']
         dist = get_rgb_distance(config_rgb, mean_rgb)
         std = int(numpy.linalg.norm(res[color_name]['std']))
-        print('%-35s Distances: Config-Mean %4d, Std %4s' %
+        print('%-35s Distances: Config vs Mean %4d, Std %4s' %
               (color_name, dist, str(std)))
 
     # Print YAML file
@@ -373,6 +373,21 @@ def cal(config_det, config_rgb, config_color, cnt):
     print(80 * '*')
     print('Printing YAML config')
     print(yaml.dump(res_yaml))
+
+    # Rewrite config file with new values
+    fn = '%s_station_%d.yaml' % (str(datetime.datetime.now()), station)
+    cfg = {
+        'desc': 'Automatically created with calibration routine date: %s, station: %d' %
+                (str(datetime.datetime.now()), station),
+        'det': config_det,
+        'rgb': config_rgb,
+        'sensor': config_sensor,
+        'color': res_yaml
+    }
+
+    pr('Also saving to %s' % fn)
+    with open(fn, 'w') as outfile:
+        yaml.dump(cfg, outfile, indent=4)
 
 
 def color_analyse(config_color):
@@ -608,7 +623,7 @@ def main():
         elif args['app2']:
             app2(config['det'], config['rgb'], config['color'], config['map_station_mp3_color'], args['--eval'])
         elif args['cal']:
-            cal(config['det'], config['rgb'], config['color'], args['-c'])
+            cal(config['det'], config['rgb'], config['color'], config['sensor'], args['-c'])
         elif args['color'] and args['analyse']:
             color_analyse(config['color'])
         elif args['detect']:
