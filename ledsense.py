@@ -41,8 +41,8 @@ import TCS34725
 # import pydevd; pydevd.settrace('192.168.178.80')
 import play_music
 from config import save_default, load, check_color_vs_map_color_mp3, check_map_color_mp3_vs_color, \
-    check_mp3_files, UndefinedStation, get_station, STR_OK, STR_UNDEF
-from helper import DrawDiagram, get_rgb_distance, get_rgb_length, pr, prdbg, prerr, prwarn
+    check_mp3_files, UndefinedStation, get_station, STR_OK, STR_UNDEF, DEF_PATH_CAL
+from helper import DrawDiagram, get_rgb_distance, get_rgb_length, get_rgb_median, get_rgb_std,  pr, prdbg, prerr, prwarn
 
 GPIO_LED = 4
 GPIO_NOK = 11
@@ -168,9 +168,7 @@ def get_stable_rgb(count, dist_limit):
             prdbg('Max Dist: %d Dist Limit: %d Restarting... ' % (max_dist, dist_limit))
             continue
         break
-    # Calc average and convert to int, for better readability. Precision is not needed
-    median = list(numpy.median(res, axis=0).astype(int))
-    return median
+    return get_rgb_median(res)
 
 
 def get_color(rgb, colors, max_rgb_dist, eval):
@@ -345,8 +343,8 @@ def cal(config_det, config_rgb, config_color, config_sensor, cnt):
             dist_config = get_rgb_distance(config_rgb, rgb)
             dist_mean = get_rgb_distance(res[color_name]['mean'], rgb)
             res[color_name]['values'].append(rgb)
-            res[color_name]['mean'] = list(numpy.median(res[color_name]['values'], axis=0).astype(int))
-            res[color_name]['std'] = list(numpy.std(res[color_name]['values'], axis=0).astype(int))
+            res[color_name]['mean'] = get_rgb_median(res[color_name]['values'])
+            res[color_name]['std'] = get_rgb_std(res[color_name]['values'])
             pr('%-15s Distances: Config %d, Mean %d' %
                (color_name, dist_config, dist_mean))
         last_color_rgb = res[color_name]['mean']
@@ -362,32 +360,35 @@ def cal(config_det, config_rgb, config_color, config_sensor, cnt):
 
     # Print YAML file
     res_yaml = []
+    res_yaml_values = []
     for color_name, _ in config_color:
-        rgb = list(res[color_name]['mean'])
-
-        # Convert numpy data types to int
-        rgb_clean = []
-        for i in rgb:
-            rgb_clean.append(int(i))
-        res_yaml.append([color_name, rgb_clean])
+        rgb = res[color_name]['mean']
+        values = res[color_name]['values']
+        res_yaml.append([color_name, rgb])
+        res_yaml_values.append([color_name, values])
     print(80 * '*')
     print('Printing YAML config')
     print(yaml.dump(res_yaml))
 
     # Rewrite config file with new values
-    fn = '%s_station_%d.yaml' % (str(datetime.datetime.now()), station)
+    timestamp = str(datetime.datetime.now())
+    path = DEF_PATH_CAL + '%s_station_%d.yaml' % (timestamp, station)
+    path_values = DEF_PATH_CAL + '%s_station_%d_values.yaml' % (timestamp, station)
     cfg = {
         'desc': 'Automatically created with calibration routine date: %s, station: %d' %
-                (str(datetime.datetime.now()), station),
+                (timestamp, station),
         'det': config_det,
         'rgb': config_rgb,
         'sensor': config_sensor,
         'color': res_yaml
     }
 
-    pr('Also saving to %s' % fn)
-    with open(fn, 'w') as outfile:
+    pr('Also saving to %s' % path)
+    with open(path, 'w') as outfile:
         yaml.dump(cfg, outfile, indent=4)
+    pr('Also saving values to %s' % path_values)
+    with open(path_values, 'w') as outfile:
+        yaml.dump(res_yaml_values, outfile, indent=4)
 
 
 def color_analyse(config_color):

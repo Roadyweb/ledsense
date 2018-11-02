@@ -81,13 +81,21 @@ def get_rgb_distance(rgb1, rgb2):
     """
     rgb1 = numpy.array(rgb1)
     rgb2 = numpy.array(rgb2)
-    return numpy.linalg.norm(rgb1 - rgb2)
+    return numpy.linalg.norm(rgb1 - rgb2).astype(int).tolist()
 
 
 def get_rgb_length(rgb):
     """ This function expects one tuples with RGB values and calculates the length of the vector.
     """
-    return numpy.linalg.norm(rgb).astype(int)
+    return numpy.linalg.norm(rgb).astype(int).tolist()
+
+
+def get_rgb_median(rgb_list):
+    return numpy.median(rgb_list, axis=0).astype(int).tolist()
+
+
+def get_rgb_std(rgb_list):
+    return numpy.std(rgb_list, axis=0).astype(int).tolist()
 
 
 def pr(str2log):

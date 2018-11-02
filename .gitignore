@@ -6,4 +6,5 @@
 /htmlcov/*
 /.coverage
 /venv/*
+/cal/*
 

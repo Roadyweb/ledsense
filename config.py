@@ -174,6 +174,7 @@ DEF_CONFIG = {
 
 
 DEF_PATH_MP3 = './mp3/'
+DEF_PATH_CAL = './cal/'
 
 
 def save_default():
