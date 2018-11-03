@@ -405,19 +405,111 @@ def cal_analysis(files):
 
         cur_colors = config['color']
         cur_values = config['values']
-        for j, color in enumerate(colors):
+        for j, color_name in enumerate(colors):
             cur_color_name = cur_colors[j][0]
-            if cur_color_name != color:
-                pr('Color differs in %s [''color''](%s vs %s) Exiting' % (files[i], cur_color_name, color))
+            if cur_color_name != color_name:
+                pr('Color differs in %s [''color''](%s vs %s) Exiting' % (files[i], cur_color_name, color_name))
                 return
 
             cur_values_name = cur_values[j][0]
-            if cur_values_name != color:
-                pr('Color differs in %s [''values''](%s vs %s) Exiting' % (files[i], cur_values_name, color))
+            if cur_values_name != color_name:
+                pr('Color differs in %s [''values''](%s vs %s) Exiting' % (files[i], cur_values_name, color_name))
                 return
     pr('Everything is fine, lets start ...')
 
-    # pprint.pprint(configs)
+    # pprint.pprint(colors)
+
+    # Calc overall means
+    over_all_means = []
+    over_all_std = []
+    over_all_values = []
+    for j, color_name in enumerate(colors):
+        pr('Starting with %s' % color_name)
+        cur_values_all = []
+        for i, config in enumerate(configs):
+            cur_values = config['values'][j][1]
+            for values in cur_values:
+                cur_values_all.append(values)
+        # TODO: if the files contain different numbers of measures values the mean is calculated wrong!!!
+        # TODO: solution, calc the mean of means on a per station basis
+        over_all_means.append([color_name, get_rgb_median(cur_values_all)])
+        over_all_std.append([color_name, get_rgb_std(cur_values_all)])
+        over_all_values.append([color_name, cur_values_all])
+
+    pprint.pprint(over_all_means)
+    pprint.pprint(over_all_std)
+
+    # Calc stats
+    #                   Stat1   Stat2
+    # Color 1            1/10    2/10
+    # Color 2            9/10    3/10
+    # ...
+
+    over_all_stats = []
+    over_all_dists = []
+    nok_stats = []
+    for j, color_name in enumerate(colors):
+        pr('Starting with %s' % color_name)
+        station_stats = []
+        station_dists = []
+        for i, config in enumerate(configs):
+            ok = 0
+            cnt = 0
+            color_values = config['values'][j][1]
+            station_name = config['station']
+            print('Station: %s' % station_name)
+            dists = []
+            for color_value in color_values:
+                cnt += 1
+                color_res, _, dist = get_color(color_value, over_all_means, 100000)
+                if color_res == color_name:
+                    ok += 1
+                    dists.append(dist)
+                else:
+                    nok_stats.append([station_name, color_name, color_res])
+            station_stats.append([ok, cnt])
+            station_dists.append(dists)
+        over_all_stats.append([color_name, station_stats])
+        over_all_dists.append([color_name, station_dists])
+
+    # and print it out in a nice table
+    print(80 * '*')
+    print(35 * ' ', end='')
+    for config in configs:
+        print('%9s' % config['station'], end='')
+    print()
+    for color_name, results in over_all_stats:
+        print('%35s' % color_name, end='')
+        for result in results:
+            ok = result[0]
+            cnt = result[1]
+            print('  %3d/%3d' % (ok, cnt), end='')
+        print()
+
+    # and print it out in a nice table
+    print(80 * '*')
+    print(35 * ' ', end='')
+    for config in configs:
+        print('%9s' % config['station'], end='')
+    print()
+    for color_name, results in over_all_dists:
+        print('%35s' % color_name, end='')
+        for result in results:
+            ok = result[0]
+            cnt = result[1]
+            print('  %3d/%3d' % (ok, cnt), end='')
+        print()
+
+
+    print(80 * '*')
+    for nok in nok_stats:
+        print('Station: %2s: set: %30s - act: %30s' % tuple(nok))
+
+    pprint.pprint(over_all_dists)
+
+
+
+
 
 
 
