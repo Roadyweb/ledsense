@@ -7,7 +7,8 @@ Usage:
   led_sens.py app [CONFIG]
   led_sens.py app2 [-l logfile] [CONFIG]
   led_sens.py cal [-c count] [-l logfile] [CONFIG]
-  led_sens.py color analyse [CONFIG]
+  led_sens.py cal analysis FILES ...
+  led_sens.py color analysis [CONFIG]
   led_sens.py detect [CONFIG]
   led_sens.py diff
   led_sens.py meas (on|off|toggle) [CONFIG]
@@ -32,6 +33,7 @@ import time
 
 import RPi.GPIO as GPIO
 import numpy
+import pprint
 import yaml
 from docopt import docopt
 
@@ -372,6 +374,54 @@ def cal(config_det, config_rgb, config_color, config_sensor, cnt):
         yaml.dump(cfg, outfile, indent=4)
 
 
+def cal_analysis(files):
+    configs = []
+    for file in files:
+        configs.append(load(file))
+
+    # check for same color count in values and color entries, use config #1 as reference
+    pr('Checking for same colors in all configs (values and color entry) using %s as reference' %
+       files[0])
+    first_run = True
+    color_cnt = 0
+    colors = []
+    for i, config in enumerate(configs):
+        if first_run:
+            config_color = config['color']
+            color_cnt = len(config_color)
+            for color in config_color:
+                colors.append(color[0])
+            first_run = False
+
+        cur_color_cnt = len(config['color'])
+        if cur_color_cnt != color_cnt:
+            pr('Color count differs in %s [''color''](%d vs %d) Exiting' % (files[i], cur_color_cnt, color_cnt))
+            return
+
+        cur_values_cnt = len(config['values'])
+        if cur_values_cnt != color_cnt:
+            pr('Color count differs in %s [''values''](%d vs %d) Exiting' % (files[i], cur_color_cnt, color_cnt))
+            return
+
+        cur_colors = config['color']
+        cur_values = config['values']
+        for j, color in enumerate(colors):
+            cur_color_name = cur_colors[j][0]
+            if cur_color_name != color:
+                pr('Color differs in %s [''color''](%s vs %s) Exiting' % (files[i], cur_color_name, color))
+                return
+
+            cur_values_name = cur_values[j][0]
+            if cur_values_name != color:
+                pr('Color differs in %s [''values''](%s vs %s) Exiting' % (files[i], cur_values_name, color))
+                return
+    pr('Everything is fine, lets start ...')
+
+    # pprint.pprint(configs)
+
+
+
+
 def color_analyse(config_color):
     def get_key(item):
         return item[0]
@@ -602,9 +652,11 @@ def main():
             app(config['det'], config['rgb'], config['color'])
         elif args['app2']:
             app2(config['det'], config['rgb'], config['color'], config['map_station_mp3_color'])
-        elif args['cal']:
+        elif args['cal'] and not args['analysis']:
             cal(config['det'], config['rgb'], config['color'], config['sensor'], args['-c'])
-        elif args['color'] and args['analyse']:
+        elif args['cal'] and args['analysis']:
+            cal_analysis(args['FILES'])
+        elif args['color'] and args['analysis']:
             color_analyse(config['color'])
         elif args['detect']:
             detect(config['det'])
