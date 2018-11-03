@@ -328,8 +328,8 @@ def cal(config_det, config_rgb, config_color, config_sensor, cnt):
             res[color_name]['values'].append(rgb)
             res[color_name]['mean'] = get_rgb_median(res[color_name]['values'])
             res[color_name]['std'] = get_rgb_std(res[color_name]['values'])
-            pr('%-15s Distances: Config %d, Mean %d' %
-               (color_name, dist_config, dist_mean))
+            pr('%-15s Distances: Config %d, Mean %d (%d of %d)' %
+               (color_name, dist_config, dist_mean, cycle + 1, cnt))
         last_color_rgb = res[color_name]['mean']
 
     # Eval result
@@ -356,22 +356,20 @@ def cal(config_det, config_rgb, config_color, config_sensor, cnt):
     # Rewrite config file with new values
     timestamp = str(datetime.datetime.now())
     path = DEF_PATH_CAL + '%s_station_%d.yaml' % (timestamp, station)
-    path_values = DEF_PATH_CAL + '%s_station_%d_values.yaml' % (timestamp, station)
     cfg = {
         'desc': 'Automatically created with calibration routine date: %s, station: %d' %
                 (timestamp, station),
         'det': config_det,
         'rgb': config_rgb,
         'sensor': config_sensor,
-        'color': res_yaml
+        'color': res_yaml,
+        'values': res_yaml_values,
+        'station': station
     }
 
     pr('Also saving to %s' % path)
     with open(path, 'w') as outfile:
         yaml.dump(cfg, outfile, indent=4)
-    pr('Also saving values to %s' % path_values)
-    with open(path_values, 'w') as outfile:
-        yaml.dump(res_yaml_values, outfile, indent=4)
 
 
 def color_analyse(config_color):
