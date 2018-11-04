@@ -1,4 +1,3 @@
-import logging
 import os.path
 import re
 import subprocess

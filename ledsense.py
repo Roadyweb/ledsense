@@ -438,10 +438,17 @@ def cal_analysis(files):
     pprint.pprint(over_all_means)
     pprint.pprint(over_all_std)
 
-    # Calc stats
+    # Calc stats OK/NOK
     #                   Stat1   Stat2
     # Color 1            1/10    2/10
     # Color 2            9/10    3/10
+    # ...
+
+    # Calc stats dist
+    #                   Stat1    Stat2
+    #                 avg/max  avg/max
+    # Color 1           1/ 10    2/ 10
+    # Color 2           9/ 10    3/ 10
     # ...
 
     over_all_stats = []
@@ -477,6 +484,10 @@ def cal_analysis(files):
     for config in configs:
         print('%9s' % config['station'], end='')
     print()
+    print(35 * ' ', end='')
+    for config in configs:
+        print('   OK/CNT', end='')
+    print()
     for color_name, results in over_all_stats:
         print('%35s' % color_name, end='')
         for result in results:
@@ -490,6 +501,10 @@ def cal_analysis(files):
     print(35 * ' ', end='')
     for config in configs:
         print('%10s' % config['station'], end='')
+    print()
+    print(35 * ' ', end='')
+    for config in configs:
+        print('  AVG/ MAX', end='')
     print()
     for color_name, results in over_all_dists:
         print('%35s' % color_name, end='')
@@ -510,7 +525,7 @@ def cal_analysis(files):
     # Create a new config file with calculated values
     # Rewrite config file with new values
     timestamp = str(datetime.datetime.now())
-    path = DEF_PATH_CAL + '%s_all.yaml' % (timestamp)
+    path = DEF_PATH_CAL + '%s_all.yaml' % timestamp
     desc = 'Automatically created with cal analysis routine date: %s ' % timestamp
     for i, file in enumerate(files):
         desc += 'File %d: ''%s'', ' % (i, file)
@@ -526,8 +541,6 @@ def cal_analysis(files):
     pr('Also saving to %s' % path)
     with open(path, 'w') as outfile:
         yaml.dump(cfg, outfile, indent=4)
-
-
 
 
 def color_analyse(config_color):
@@ -587,7 +600,7 @@ def color_analyse(config_color):
         # print(dist)
 
         print('Distance   - Avg: %5d Std: %5d, Min: %5d, Max: %5d' %
-              (numpy.mean(dist), numpy.std(dist), min(dist), max(dist)))
+              (int(numpy.mean(dist)), int(numpy.std(dist)), min(dist), max(dist)))
 
     print('******************** Length for all all colors ********************')
 
@@ -597,7 +610,7 @@ def color_analyse(config_color):
     # print(rgb_len)
 
     print('RGB Length - Avg: %5d Std: %5d, Min: %5d, Max: %5d' %
-          (numpy.mean(rgb_len), numpy.std(rgb_len), min(rgb_len), max(rgb_len)))
+          (int(numpy.mean(rgb_len)), int(numpy.std(rgb_len)), min(rgb_len), max(rgb_len)))
 
 
 def detect(config):
