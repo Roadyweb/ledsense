@@ -43,7 +43,7 @@ import TCS34725
 import play_music
 from config import save_default, load, check_color_vs_map_color_mp3, check_map_color_mp3_vs_color, \
     check_mp3_files, UndefinedStation, get_station, DEF_PATH_CAL
-from helper import DrawDiagram, get_rgb_distance, get_rgb_length, get_rgb_median, get_rgb_std,  pr, prdbg, prerr, prwarn
+from helper import DrawDiagram, get_rgb_distance, get_rgb_length, get_rgb_median, get_rgb_std, pr, prdbg, prerr, prwarn
 
 GPIO_LED = 4
 
@@ -65,7 +65,6 @@ consoleHandler = logging.StreamHandler()
 consoleHandler.setFormatter(logFormatter)
 
 rootLogger.addHandler(consoleHandler)
-
 
 LOG_RGB_INT = 10  # seconds
 log_rgb_exit = False
@@ -472,7 +471,7 @@ def cal_analysis(files):
         over_all_stats.append([color_name, station_stats])
         over_all_dists.append([color_name, station_dists])
 
-    # and print it out in a nice table
+    # and print it out in a nice table (OK/NOK)
     print(80 * '*')
     print(35 * ' ', end='')
     for config in configs:
@@ -486,30 +485,47 @@ def cal_analysis(files):
             print('  %3d/%3d' % (ok, cnt), end='')
         print()
 
-    # and print it out in a nice table
+    # and print it out in a nice table (distances)
     print(80 * '*')
     print(35 * ' ', end='')
     for config in configs:
-        print('%9s' % config['station'], end='')
+        print('%10s' % config['station'], end='')
     print()
     for color_name, results in over_all_dists:
         print('%35s' % color_name, end='')
         for result in results:
-            ok = result[0]
-            cnt = result[1]
-            print('  %3d/%3d' % (ok, cnt), end='')
+            if len(result) == 0:
+                max_dist = '----'
+                avg_dist = '----'
+            else:
+                max_dist = max(result)
+                avg_dist = int(numpy.mean(result))
+            print(' %4s/%4s' % (avg_dist, max_dist), end='')
         print()
-
 
     print(80 * '*')
     for nok in nok_stats:
         print('Station: %2s: set: %30s - act: %30s' % tuple(nok))
 
-    pprint.pprint(over_all_dists)
+    # Create a new config file with calculated values
+    # Rewrite config file with new values
+    timestamp = str(datetime.datetime.now())
+    path = DEF_PATH_CAL + '%s_all.yaml' % (timestamp)
+    desc = 'Automatically created with cal analysis routine date: %s ' % timestamp
+    for i, file in enumerate(files):
+        desc += 'File %d: ''%s'', ' % (i, file)
 
+    cfg = {
+        'desc': desc,
+        'det': configs[0]['det'],
+        'rgb': configs[0]['rgb'],
+        'sensor': configs[0]['sensor'],
+        'color': over_all_means,
+    }
 
-
-
+    pr('Also saving to %s' % path)
+    with open(path, 'w') as outfile:
+        yaml.dump(cfg, outfile, indent=4)
 
 
 
